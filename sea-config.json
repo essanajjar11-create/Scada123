@@ -1,0 +1,4 @@
+{
+  "main": "dist/server_bundled.cjs",
+  "output": "scada_server.exe"
+}

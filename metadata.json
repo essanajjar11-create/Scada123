@@ -1,0 +1,6 @@
+{
+  "name": "SCADA Instrument Transformers Monitoring System",
+  "description": "Enterprise SCADA & Substation Automation System (SAS) for 132kV/13.8kV instrument transformers, power transformers, switchgear, DGA, protection relays, and grid analytics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

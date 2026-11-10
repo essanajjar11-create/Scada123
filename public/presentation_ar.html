@@ -1,0 +1,2054 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>الموسوعة الأكاديمية التفاعلية | التوأم الرقمي ونظام SCADA & SAS 132/13.8kV</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- PptxGenJS for PowerPoint generation -->
+  <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+
+  <!-- MathJax Configuration MUST BE BEFORE SCRIPT -->
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+        processEscapes: true,
+        processEnvironments: true
+      },
+      options: {
+        skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+  <style>
+    body { font-family: 'Cairo', system-ui, sans-serif; }
+    .font-mono-code { font-family: 'JetBrains Mono', monospace; }
+    .slide { display: none; opacity: 0; transition: opacity 0.25s ease-in-out, transform 0.25s ease-in-out; transform: translateY(4px); }
+    .slide.active { display: block; opacity: 1; transform: translateY(0); }
+    
+    @media print {
+      @page {
+        size: A4 landscape;
+        margin: 6mm 8mm;
+      }
+      * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+      }
+      html, body {
+        background: #09090b !important;
+        color: #f4f4f5 !important;
+        width: 100% !important;
+        height: auto !important;
+        min-height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: visible !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      main {
+        max-width: 100% !important;
+        width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        display: block !important;
+      }
+      .slide {
+        display: flex !important;
+        flex-direction: column !important;
+        opacity: 1 !important;
+        transform: none !important;
+        page-break-after: always !important;
+        break-after: page !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        margin: 0 0 8mm 0 !important;
+        min-height: 175mm !important;
+        box-sizing: border-box !important;
+        border: 1px solid #27272a !important;
+        background: #18181b !important;
+        color: #f4f4f5 !important;
+        border-radius: 1rem !important;
+        padding: 1.25rem !important;
+        overflow: visible !important;
+      }
+      .slide:last-of-type {
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-zinc-950 text-zinc-100 min-h-screen flex flex-col justify-between select-none">
+
+  <!-- TOP HEADER -->
+  <header class="no-print bg-zinc-900/95 backdrop-blur border-b border-zinc-800 px-4 py-2.5 flex flex-wrap items-center justify-between sticky top-0 z-50 shadow-lg gap-2">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-600 to-indigo-800 flex items-center justify-center font-black text-white text-lg shadow-md border border-indigo-400/30">
+        ⚡
+      </div>
+      <div>
+        <h1 class="text-sm font-extrabold text-white flex items-center gap-2">
+          <span>الموسوعة الهندسية للتوأم الرقمي ونظام SCADA & SAS</span>
+          <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800">132/13.8 kV</span>
+        </h1>
+        <p class="text-[11px] text-zinc-400">
+          إعداد: <strong class="text-indigo-400">م. حيدرة ديب</strong> & <strong class="text-emerald-400">م. عيسى نجار</strong>
+        </p>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="flex items-center gap-2 flex-wrap">
+      <div class="hidden sm:flex items-center gap-2 bg-zinc-950 px-2.5 py-1 rounded-xl border border-zinc-800">
+        <div class="w-20 bg-zinc-800 h-1.5 rounded-full overflow-hidden">
+          <div id="progressBar" class="bg-gradient-to-r from-indigo-500 to-emerald-500 h-full w-0 transition-all duration-300"></div>
+        </div>
+        <span class="text-xs font-mono text-indigo-300 font-bold" id="slideIndicator">1 / 35</span>
+      </div>
+
+      <select id="slideSelect" class="bg-zinc-800 text-zinc-200 border border-zinc-700 rounded-xl px-2.5 py-1 text-xs font-sans focus:outline-none max-w-[220px] md:max-w-[320px] truncate cursor-pointer"></select>
+
+      <button onclick="prevSlide()" class="px-2.5 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-lg text-xs font-bold transition border border-zinc-700 cursor-pointer">▶️ السابق</button>
+      <button onclick="nextSlide()" class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition shadow cursor-pointer">التالي ◀️</button>
+      <button id="btnExportPptx" onclick="exportToPPTX()" class="px-2.5 py-1 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white rounded-lg text-xs font-bold transition shadow border border-amber-500/50 flex items-center gap-1.5 cursor-pointer" title="تحميل العرض كملف PowerPoint (PPTX)">
+        <span>📊</span>
+        <span>تحميل PPTX</span>
+      </button>
+      <button id="btnExportPdf" onclick="exportToPDF()" class="px-2.5 py-1 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-white rounded-lg text-xs font-bold transition shadow border border-emerald-500/50 flex items-center gap-1.5 cursor-pointer" title="طباعة أو تحميل كملف PDF">
+        <span>🖨️</span>
+        <span>تحميل PDF</span>
+      </button>
+      <button onclick="toggleFullscreen()" class="px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-xs transition border border-zinc-700 cursor-pointer">⛶</button>
+    </div>
+  </header>
+
+  <!-- MAIN SLIDES -->
+  <main class="flex-1 max-w-6xl mx-auto w-full p-3 md:p-6 flex items-center justify-center">
+
+    <!-- 1: COVER -->
+    <section class="slide active w-full bg-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-10 shadow-2xl space-y-6 text-center" data-title="1. الغلاف الرسمي والبيانات الأكاديمية">
+      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-950 border border-indigo-700 text-indigo-300 text-xs font-bold">
+        ⚡ بحث وتطبيق هندسي متقدم في أتمتة المحطات الرقمية والشبكات الذكية
+      </div>
+      <h2 class="text-2xl md:text-5xl font-black text-white leading-tight">منظومة التوأم الرقمي والتحكم الإشرافي (SCADA & SAS)</h2>
+      <p class="text-base md:text-2xl text-emerald-400 font-bold">محطة التحويل الكهربائية الرئيسية 132/13.8 ك.ف</p>
+      <p class="text-zinc-400 max-w-3xl mx-auto text-xs md:text-sm leading-relaxed">
+        دراسة مرجعية تتضمن النمذجة الفيزيائية بالزمن الحقيقي، التزامن (ANSI 25)، غلق نقطة الموجة (PoW)، الحماية التفاضلية للقضبان والمحولات (ANSI 87B/87T)، التقييم الحراري (IEEE C57.91)، تحليل الغازات (DGA Duval)، منحنيات التنسيق الزماني-التياري (TCC)، واختبارات الأمن السيبراني (NERC-CIP).
+      </p>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-xl mx-auto text-right">
+        <div class="bg-zinc-950 p-3.5 rounded-2xl border border-indigo-900/60 shadow">
+          <span class="text-xs text-indigo-400 font-bold block">تصميم أنظمة SCADA والتوأم الرقمي:</span>
+          <div class="text-base font-extrabold text-white">م. حيدرة ديب</div>
+          <span class="text-[11px] text-zinc-400">SCADA, SAS Architect & Software Systems Specialist</span>
+        </div>
+        <div class="bg-zinc-950 p-3.5 rounded-2xl border border-emerald-900/60 shadow">
+          <span class="text-xs text-emerald-400 font-bold block">هندسة القوى وأنظمة الحماية المتقدمة:</span>
+          <div class="text-base font-extrabold text-white">م. عيسى نجار</div>
+          <span class="text-[11px] text-zinc-400">Power Systems, High Voltage & Numerical Protection Specialist</span>
+        </div>
+      </div>
+      <div class="pt-2 text-[11px] text-zinc-400">
+        المعايير المعتمدة: IEC 61850 | IEC 60255 | IEEE C57.91 | IEEE 1584 | IEEE 519 | IEEE C37.118 | ISA-18.2 | NERC-CIP
+      </div>
+    </section>
+
+    <!-- 2: DIGITAL TWIN ARCHITECTURE -->
+    <section class="slide w-full bg-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 shadow-2xl space-y-4" data-title="2. مفهوم وهندسة التوأم الرقمي">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+          <span class="w-7 h-7 bg-indigo-600 rounded-lg text-xs flex items-center justify-center font-bold">2</span>
+          مفهوم وهندسة التوأم الرقمي (Purdue Model Architecture)
+        </h3>
+        <span class="text-xs font-mono text-zinc-400 bg-zinc-800 px-2.5 py-1 rounded-lg">IEC 61850 & Purdue Model</span>
+      </div>
+      <p class="text-xs md:text-sm text-zinc-300 leading-relaxed">
+        التوأم الرقمي (Digital Twin) هو تمثيل برمجي وفيزيائي فوري بالزمن الحقيقي لمحطة التحويل 132/13.8 ك.ف، يتطابق مع نموذج بيردو للأمن الصناعي ويشمل 5 مستويات هرمية:
+      </p>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+        <div class="bg-zinc-950 p-3.5 rounded-2xl border border-zinc-800 space-y-2">
+          <div class="text-indigo-400 font-bold flex items-center gap-1.5">
+            <span>⚙️</span> المحرك الفيزيائي (Physics Engine)
+          </div>
+          <p class="text-zinc-400 text-[11px] leading-relaxed">
+            محاكاة كهروديناميكية وحرارية فورية بمعدل 10ms وفق قوانين كيرشوف، وماكسويل، والتحليل الطيفي لتحويل فورييه، ومعادلات أرهينيوس للتقادم العزلي.
+          </p>
+        </div>
+        <div class="bg-zinc-950 p-3.5 rounded-2xl border border-zinc-800 space-y-2">
+          <div class="text-emerald-400 font-bold flex items-center gap-1.5">
+            <span>🌐</span> خادم الاتصالات اللحظي (Telemetry Server)
+          </div>
+          <p class="text-zinc-400 text-[11px] leading-relaxed">
+            قنوات اتصالات ثنائية الاتجاه (Full-Duplex WebSockets) تنقل التيارات والجهود وحالات القواطع فورياً ومطابقة لمواصفات حزم IEC 61850 MMS.
+          </p>
+        </div>
+        <div class="bg-zinc-950 p-3.5 rounded-2xl border border-zinc-800 space-y-2">
+          <div class="text-amber-400 font-bold flex items-center gap-1.5">
+            <span>📊</span> التحليلات التنبؤية (Predictive AI)
+          </div>
+          <p class="text-zinc-400 text-[11px] leading-relaxed">
+            حساب استهلاك العمر المتبقي (RUL)، تشخيص غازات DGA بمثلث دوفال، ومؤشر صحة الأصول (AHI) بالمعايير الدولية Cigré TB 761.
+          </p>
+        </div>
+      </div>
+      <div class="bg-zinc-950/80 p-3 rounded-xl border border-zinc-800 font-mono text-[11px] text-zinc-300">
+        $$\text{State}_{\text{DigitalTwin}}(t + \Delta t) = f\left(\text{State}(t), \mathbf{V}_{\text{grid}}, \mathbf{I}_{\text{load}}, \text{Topology}, T_{\text{amb}}\right)$$
+      </div>
+    </section>
+
+    <!-- 3: TOPOLOGY 132/13.8KV -->
+    <section class="slide w-full bg-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 shadow-2xl space-y-4" data-title="3. الطوبولوجيا الهندسية 132/13.8 ك.ف">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+          <span class="w-7 h-7 bg-indigo-600 rounded-lg text-xs flex items-center justify-center font-bold">3</span>
+          الطوبولوجيا الهندسية لساحة المفاتيح 132/13.8 ك.ف
+        </h3>
+        <span class="text-xs font-mono text-zinc-400 bg-zinc-800 px-2.5 py-1 rounded-lg">Substation Single-Line Topology</span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+        <div class="space-y-2.5">
+          <div class="bg-zinc-950 p-3 rounded-xl border border-indigo-950/70">
+            <h4 class="font-bold text-indigo-300 mb-1">🔴 جانب الجهد العالي (132 kV High Voltage Yard):</h4>
+            <ul class="list-disc list-inside text-zinc-300 space-y-1 text-[11px]">
+              <li><strong>نظام قضبان مزدوج (Double Busbar)</strong>: Bus A و Bus B مع قاطع ربط <code>52-0</code>.</li>
+              <li><strong>قواطع SF6 غازية</strong>: قاطع الخط <code>52-1</code>، وقواطع المحولات <code>52-3</code> و <code>52-4</code>.</li>
+              <li><strong>فواصم العزل (Disconnectors)</strong>: سكاكين العزل <code>89-1A/B</code> و <code>89-3A/B</code> و <code>89-4A/B</code>.</li>
+              <li><strong>سكاكين التأريض السريعة</strong>: <code>84-1</code> و <code>84-2</code> لحماية الصيانة وتفريغ الشحنات.</li>
+            </ul>
+          </div>
+          <div class="bg-zinc-950 p-3 rounded-xl border border-emerald-950/70">
+            <h4 class="font-bold text-emerald-300 mb-1">🟢 محولات القدرة الرئيسية (40 MVA Transformers):</h4>
+            <p class="text-zinc-300 text-[11px] leading-relaxed">
+              محولان رئيسيان <strong>TR-1</strong> و <strong>TR-2</strong> باستطاعة $40\text{ MVA}$ لكل محول، نسبة التحويل $132/13.8\text{ kV}$، مجموعة المتجهات $\text{Dyn11}$، مغير تفرعات تحت الحمل (OLTC) بـ 17 خطوة.
+            </p>
+          </div>
+        </div>
+        <div class="space-y-2.5">
+          <div class="bg-zinc-950 p-3 rounded-xl border border-amber-950/70">
+            <h4 class="font-bold text-amber-300 mb-1">🟡 جانب الجهد المتوسط (13.8 kV Metal-Clad Switchgear):</h4>
+            <ul class="list-disc list-inside text-zinc-300 space-y-1 text-[11px]">
+              <li><strong>قضيب التوزيع الأول (MV Bus-1)</strong>: يغذيه المحول TR-1 عبر <code>52-2</code>، ويغذي المغذي <code>52-7</code>.</li>
+              <li><strong>قضيب التوزيع الثاني (MV Bus-2)</strong>: يغذيه المحول TR-2 عبر <code>52-5</code>، ويغذي المغذيات <code>52-8</code> و <code>52-9</code> و <code>52-B</code>.</li>
+              <li><strong>قاطع التجزئة (Bus Sectionalizer)</strong>: القاطع <code>52-6</code> لربط أو عزل القضيبين.</li>
+            </ul>
+          </div>
+          <div class="bg-zinc-950 p-3 rounded-xl border border-cyan-950/70">
+            <h4 class="font-bold text-cyan-300 mb-1">🔋 منظومة التخزين بالبطاريات (BESS 10MW / 40MWh):</h4>
+            <p class="text-zinc-300 text-[11px] leading-relaxed">
+              مرتبطة بالقضيب الثاني عبر القاطع <code>52-B</code> لدعم التردد، وتوفير القصور الذاتي الاصطناعي (Synthetic Inertia)، وتنظيم الجهد.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4: INTERLOCKING MATRIX -->
+    <section class="slide w-full bg-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 shadow-2xl space-y-4" data-title="4. مصفوفة التعشيق المنطقي وحماية التأريض">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+          <span class="w-7 h-7 bg-indigo-600 rounded-lg text-xs flex items-center justify-center font-bold">4</span>
+          مصفوفة التعشيق المنطقي وحماية التأريض (Safety Interlocking)
+        </h3>
+        <span class="text-xs font-mono text-zinc-400 bg-zinc-800 px-2.5 py-1 rounded-lg">IEC 62271-200 & IEEE C37.20</span>
+      </div>
+      <p class="text-xs md:text-sm text-zinc-300 leading-relaxed">
+        تحظر المنظومة ارتكاب أي مناورات تشغيلية خاطئة قد تؤدي إلى حدوث قوس كهربائي مدمر أو قصر مباشر على القضبان الحية:
+      </p>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+        <div class="bg-zinc-950 p-4 rounded-2xl border border-zinc-800 space-y-2">
+          <h4 class="font-bold text-indigo-400">1. قواعد فواصم العزل (Disconnector Rules):</h4>
+          <p class="text-zinc-400 text-[11px] leading-relaxed">
+            يُمنع منعاً باتاً فتح أو إغلاق أي سكين فاصل <code>89</code> إذا كان القاطع المرافق <code>52</code> في وضعية الإغلاق، أو إذا كان تيار الخط يتجاوز $5\text{ A}$:
+          </p>
+          <div class="p-2 bg-zinc-900 rounded-lg font-mono text-[11px] text-emerald-400">
+            $$\text{Permit}(\text{Open } 89\text{-}x) \iff I_{\text{Line}} \lt 5\text{ A} \land \text{Status}(52\text{-}x) = \text{OPEN}$$
+          </div>
+        </div>
+        <div class="bg-zinc-950 p-4 rounded-2xl border border-zinc-800 space-y-2">
+          <h4 class="font-bold text-rose-400">2. قواعد سكاكين التأريض (Earthing Rules):</h4>
+          <p class="text-zinc-400 text-[11px] leading-relaxed">
+            يُقفل سكين التأريض <code>84</code> كهربائياً وميكانيكياً ولا يُسمح بإغلاقه إلا بعد التأكد من خلو القضبان من الجهد بالكامل وانفصال كافة المغذيات:
+          </p>
+          <div class="p-2 bg-zinc-900 rounded-lg font-mono text-[11px] text-rose-400">
+            $$\text{Permit}(\text{Close } 84\text{-}1) \iff V_{\text{Bus}} \lt 0.05\text{ p.u.} \land \text{All Disconnectors} = \text{OPEN}$$
+          </div>
+        </div>
+      </div>
+      <div class="bg-rose-950/40 p-3 rounded-xl border border-rose-800/80 text-[11px] text-rose-300">
+        ⚠️ <strong>الفصل الفوري عند الخطأ الجسيم:</strong> في حال تم فرض إغلاق سكين التأريض في وضعية المحاكاة على قضيب حي، تصدر المنظومة إشارة فصل فوري لمرحل الحماية لفتح كافة القواطع المغذية في زمن أقل من <strong>10ms</strong>.
+      </div>
+    </section>
+
+    <!-- 5: 3D DIGITAL TWIN -->
+    <section class="slide w-full bg-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 shadow-2xl space-y-4" data-title="5. النمذجة ثلاثية الأبعاد (3D Spatial Twin)">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+          <span class="w-7 h-7 bg-indigo-600 rounded-lg text-xs flex items-center justify-center font-bold">5</span>
+          النمذجة ثلاثية الأبعاد (3D Spatial Digital Twin)
+        </h3>
+        <span class="text-xs font-mono text-zinc-400 bg-zinc-800 px-2.5 py-1 rounded-lg">Three.js WebGL Engine</span>
+      </div>
+      <p class="text-xs md:text-sm text-zinc-300 leading-relaxed">
+        تجسيد هندسي فراغي متقدم لساحة المفاتيح والمحولات باستخدام محرك WebGL ثلاثي الأبعاد مع خصائص إضاءة وظلال فيزيائية دقيقة:
+      </p>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+        <div class="bg-zinc-950 p-3.5 rounded-2xl border border-zinc-800 space-y-2">
+          <div class="font-bold text-indigo-400">🧊 الهندسة الإقليدية والمواد</div>
+          <p class="text-zinc-400 text-[11px] leading-relaxed">
+            نمذجة خزانات المحولات، المبردات المروحية، بوشينغات العزل الخزفية، خلايا المفاتيح، والسكاكين الحركية المتحركة مع حالات القواطع الحقيقية.
+          </p>
+        </div>
+        <div class="bg-zinc-950 p-3.5 rounded-2xl border border-zinc-800 space-y-2">
+          <div class="font-bold text-emerald-400">🎯 التفاعل الشعاعي (Raycasting)</div>
+          <p class="text-zinc-400 text-[11px] leading-relaxed">
+            التقاط نقرات الفأرة وتحديد المعدة في الفضاء ثلاثي الأبعاد وعرض بطاقة القياسات الحية (HUD Tooltip) متضمنة الجهد والتيار والحرارة والحالة.
+          </p>
+        </div>
+        <div class="bg-zinc-950 p-3.5 rounded-2xl border border-zinc-800 space-y-2">
+          <div class="font-bold text-rose-400">🌡️ شيدر التصوير الحراري (IR)</div>
+          <p class="text-zinc-400 text-[11px] leading-relaxed">
+            تطبيق تظليل برمجيات GLSL لتوليد خريطة ألوان حرارية فورية تحاكي كاميرات الأشعة تحت الحمراء مع ارتفاع أحمال المحولات.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6: SYNCHROCHECK ANSI 25 -->
+    <section class="slide w-full bg-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 shadow-2xl space-y-4" data-title="6. التحقق التزامني (ANSI 25 Synchrocheck)">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+          <span class="w-7 h-7 bg-indigo-600 rounded-lg text-xs flex items-center justify-center font-bold">6</span>
+          التحقق التزامني (ANSI 25 Synchrocheck Relay)
+        </h3>
+        <span class="text-xs font-mono text-zinc-400 bg-zinc-800 px-2.5 py-1 rounded-lg">IEEE C37.2 & IEC 60255</span>
+      </div>
+      <p class="text-xs md:text-sm text-zinc-300 leading-relaxed">
+        عند إغلاق قاطع ربط القضبان <code>52-0</code> أو قاطع التجزئة <code>52-6</code> لدمج مصدرين كهربائيين، تراقب مرحلة الحماية ANSI 25 ثلاثة شروط حتمية:
+      </p>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+        <div class="bg-zinc-950 p-3.5 rounded-2xl border border-zinc-800 space-y-1 text-center">
+          <div class="text-indigo-400 font-bold">1. فرق مطال الجهد</div>
+          <div class="text-lg font-mono text-white font-black">$$\Delta V \le 5\%$$</div>
+          <p class="text-zinc-400 text-[11px]">مقارنة القيمة الفعالة للجهد على طرفي القاطع ($\le 6.6\text{ kV}$).</p>
+        </div>
+        <div class="bg-zinc-950 p-3.5 rounded-2xl border border-zinc-800 space-y-1 text-center">
+          <div class="text-emerald-400 font-bold">2. فرق زاوية الطور</div>
+          <div class="text-lg font-mono text-white font-black">$$\Delta \theta \le 10^\circ$$</div>
+          <p class="text-zinc-400 text-[11px]">الفرق الزاوي بين متجهي الجهد لمنع عزوم الالتواء الميكانيكية.</p>
+        </div>
+        <div class="bg-zinc-950 p-3.5 rounded-2xl border border-zinc-800 space-y-1 text-center">
+          <div class="text-amber-400 font-bold">3. تردد الانزلاق</div>
+          <div class="text-lg font-mono text-white font-black">$$\Delta f \le 0.05\text{ Hz}$$</div>
+          <p class="text-zinc-400 text-[11px]">معدل انزلاق التردد النسبي وسرعة الدوران الزاوي ($\omega_{\text{slip}}$).</p>
+        </div>
+      </div>
+      <div class="bg-zinc-950 p-3 rounded-xl border border-zinc-800 font-mono text-[11px] text-zinc-300 text-center">
+        $$I_{\text{shock, peak}} = \frac{\sqrt{2} \cdot \sqrt{V_1^2 + V_2^2 - 2V_1V_2\cos(\Delta \theta)}}{X_{d1}'' + X_{d2}'' + X_{\text{tie}}}$$
+      </div>
+    </section>
+
+    <!-- 7: POINT-ON-WAVE (PoW) -->
+    <section class="slide w-full bg-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 shadow-2xl space-y-4" data-title="7. الغلق عند نقطة الموجة المثالية (PoW)">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+          <span class="w-7 h-7 bg-indigo-600 rounded-lg text-xs flex items-center justify-center font-bold">7</span>
+          الغلق عند نقطة الموجة المثالية (Point-on-Wave Switching)
+        </h3>
+        <span class="text-xs font-mono text-zinc-400 bg-zinc-800 px-2.5 py-1 rounded-lg">CIGRÉ WG A3.07 & IEEE C37.015</span>
+      </div>
+      <p class="text-xs md:text-sm text-zinc-300 leading-relaxed">
+        تعد ظاهرة تيار الاندفاع المغناطيسي (Inrush Current) عند توصيل المحولات من أخطر الظواهر العابرة المسببة لإجهادات شديدة وفصل خاطئ للحماية التفاضلية:
+      </p>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+        <div class="bg-zinc-950 p-4 rounded-2xl border border-rose-900/50 space-y-2">
+          <h4 class="font-bold text-rose-400">❌ الإغلاق العشوائي (Random Closing):</h4>
+          <p class="text-zinc-300 text-[11px] leading-relaxed">
+            إذا تم التوصيل عند مرور موجة الجهد بالصفر ($V(t)=0$) مع وجود فيض متبقي ($\Phi_{\text{res}}$)، يصل الفيض إلى أكثر من ضعفي فيض الإشباع:
+          </p>
+          <div class="p-2 bg-zinc-900 rounded font-mono text-[11px] text-rose-300">
+            $$\Phi_{\text{peak}} \approx 2\Phi_{\text{max}} + \Phi_{\text{res}} \implies I_{\text{inrush}} \approx (8 - 12) \times I_{\text{nominal}}$$
+          </div>
+        </div>
+        <div class="bg-zinc-950 p-4 rounded-2xl border border-emerald-900/50 space-y-2">
+          <h4 class="font-bold text-emerald-400">✅ الإغلاق المتحكم به (PoW Controller):</h4>
+          <p class="text-zinc-300 text-[11px] leading-relaxed">
+            يقوم النظام بتأخير أمر التوصيل بالمللي ثانية ليكون التلامس الميكانيكي الفعلي عند **قمة موجة الجهد** بالضبط ($\omega t = \pi/2$):
+          </p>
+          <div class="p-2 bg-zinc-900 rounded font-mono text-[11px] text-emerald-300">
+            $$\Phi_{\text{peak}} = \Phi_{\text{max}} \implies \text{Reduction of Inrush Current by } \gt 85\%$$
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 8: INSTRUMENT TRANSFORMERS (CTs/VTs) -->
+    <section class="slide w-full bg-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 shadow-2xl space-y-4" data-title="8. محولات القياس ونقطة الركبة (CTs/VTs)">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+          <span class="w-7 h-7 bg-indigo-600 rounded-lg text-xs flex items-center justify-center font-bold">8</span>
+          محولات القياس ونظرية إشباع القلب المغناطيسي
+        </h3>
+        <span class="text-xs font-mono text-zinc-400 bg-zinc-800 px-2.5 py-1 rounded-lg">IEC 61869-2 & ANSI C57.13</span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+        <div class="bg-zinc-950 p-4 rounded-2xl border border-zinc-800 space-y-2">
+          <h4 class="font-bold text-indigo-400">حساب جهد نقطة الركبة (Knee-Point Voltage $V_k$):</h4>
+          <p class="text-zinc-400 text-[11px] leading-relaxed">
+            النقطة التي تؤدي زيادة الجهد بنسبة $10\%$ عندها إلى زيادة تيار المغنطة بنسبة $50\%$:
+          </p>
+          <div class="p-2.5 bg-zinc-900 rounded-xl font-mono text-[11px] text-indigo-300">
+            $$V_k \ge K_{\text{tdf}} \cdot I_{\text{fault, max}} \cdot \left(\frac{N_{\text{sec}}}{N_{\text{pri}}}\right) \cdot (R_{\text{ct}} + 2 R_{\text{lead}} + R_{\text{relay}})$$
+          </div>
+          <p class="text-[11px] text-zinc-400">
+            حيث $K_{\text{tdf}}$ هو معامل الأبعاد العابرة ($1.5 - 2.0$) لمنع الإشباع بالمركبة المستمرة العابرة (DC Offset).
+          </p>
+        </div>
+        <div class="bg-zinc-950 p-4 rounded-2xl border border-zinc-800 space-y-2">
+          <h4 class="font-bold text-emerald-400">العبء الكلي للدائرة الثانوية (Secondary Burden):</h4>
+          <p class="text-zinc-400 text-[11px] leading-relaxed">
+            حساب القدرة الظاهرية المستهلكة في كابلات التوصيل النحاسية ومقاومة دخل أجهزة الحماية:
+          </p>
+          <div class="p-2.5 bg-zinc-900 rounded-xl font-mono text-[11px] text-emerald-300">
+            $$S_{\text{burden}} = I_{\text{sec}}^2 \cdot \sqrt{(R_{\text{lead}} + R_{\text{relay}})^2 + X_{\text{burden}}^2} \quad (\text{VA})$$
+          </div>
+          <p class="text-[11px] text-zinc-400">
+            فئة الدقة المستخدمة: <strong>5P20 30VA</strong> لدوائر الحماية، و <strong>Class 0.2S</strong> للفوترة والقياسات.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 9: ARC FLASH HAZARD -->
+    <section class="slide w-full bg-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 shadow-2xl space-y-4" data-title="9. تقييم مخاطر الانفجار القوسي (IEEE 1584)">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+          <span class="w-7 h-7 bg-indigo-600 rounded-lg text-xs flex items-center justify-center font-bold">9</span>
+          تقييم مخاطر الانفجار القوسي (Arc Flash Hazard Analysis)
+        </h3>
+        <span class="text-xs font-mono text-zinc-400 bg-zinc-800 px-2.5 py-1 rounded-lg">IEEE 1584-2018 & NFPA 70E</span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+        <div class="bg-zinc-950 p-4 rounded-2xl border border-zinc-800 space-y-2">
+          <h4 class="font-bold text-amber-400">طاقة الانفجار الساقطة (Incident Energy $E$):</h4>
+          <div class="p-2 bg-zinc-900 rounded font-mono text-[11px] text-amber-300">
+            $$E = 4.184 \cdot C_f \cdot E_n \cdot \left(\frac{t_{\text{arc}}}{0.2}\right) \cdot \left(\frac{610^x}{D^x}\right) \quad (\text{cal/cm}^2)$$
+          </div>
+          <h4 class="font-bold text-indigo-400 pt-1">حدود مسافة الأمان (Arc Flash Boundary $D_B$):</h4>
+          <div class="p-2 bg-zinc-900 rounded font-mono text-[11px] text-indigo-300">
+            $$D_B = \left[ 4.184 \cdot C_f \cdot E_n \cdot \left(\frac{t_{\text{arc}}}{0.2}\right) \cdot \frac{610^x}{1.2} \right]^{1/x} \quad (\text{mm})$$
+          </div>
+        </div>
+        <div class="bg-zinc-950 p-3.5 rounded-2xl border border-zinc-800 space-y-1.5">
+          <h4 class="font-bold text-zinc-200">فئات ملابس الحماية الشخصية (PPE Categories):</h4>
+          <div class="space-y-1 text-[11px]">
+            <div class="p-1.5 rounded bg-emerald-950/60 border border-emerald-800 text-emerald-300 flex justify-between">
+              <span><strong>Cat 1:</strong> $\le 4\text{ cal/cm}^2$</span>
+              <span>ملابس مقاومة للهب FR</span>
+            </div>
+            <div class="p-1.5 rounded bg-amber-950/60 border border-amber-800 text-amber-300 flex justify-between">
+              <span><strong>Cat 2:</strong> $\le 8\text{ cal/cm}^2$</span>
+              <span>بدلة FR + واقي وجه مقوس</span>
+            </div>
+            <div class="p-1.5 rounded bg-orange-950/60 border border-orange-800 text-orange-300 flex justify-between">
+              <span><strong>Cat 3:</strong> $\le 25\text{ cal/cm}^2$</span>
+              <span>بدلة وغطاء رأس تفريغ قوسي</span>
+            </div>
+            <div class="p-1.5 rounded bg-rose-950/60 border border-rose-800 text-rose-300 flex justify-between">
+              <span><strong>Cat 4:</strong> $\le 40\text{ cal/cm}^2$</span>
+              <span>بدلة درع قوسي متكاملة 40-Cal</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 10: DGA DUVAL TRIANGLE -->
+    <section class="slide w-full bg-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 shadow-2xl space-y-4" data-title="10. تحليل الغازات الذائبة ومثلث دوفال (DGA)">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+          <span class="w-7 h-7 bg-indigo-600 rounded-lg text-xs flex items-center justify-center font-bold">10</span>
+          تحليل الغازات الذائبة ومثلث دوفال الأول (DGA Duval Triangle)
+        </h3>
+        <span class="text-xs font-mono text-zinc-400 bg-zinc-800 px-2.5 py-1 rounded-lg">IEC 60599 & IEEE C57.104</span>
+      </div>
+      <p class="text-xs md:text-sm text-zinc-300 leading-relaxed">
+        طريقة التحليل الطيفي للغازات الهيدروكربونية الذائبة في الزيت لتشخيص الأعطال الداخلية في المحول بدقة متناهية:
+      </p>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+        <div class="bg-zinc-950 p-3 rounded-xl border border-zinc-800 font-mono text-[11px] text-center text-indigo-400">
+          $$\% \text{CH}_4 = \frac{[\text{CH}_4]}{[\text{CH}_4] + [\text{C}_2\text{H}_4] + [\text{C}_2\text{H}_2]} \times 100$$
+        </div>
+        <div class="bg-zinc-950 p-3 rounded-xl border border-zinc-800 font-mono text-[11px] text-center text-emerald-400">
+          $$\% \text{C}_2\text{H}_4 = \frac{[\text{C}_2\text{H}_4]}{[\text{CH}_4] + [\text{C}_2\text{H}_4] + [\text{C}_2\text{H}_2]} \times 100$$
+        </div>
+        <div class="bg-zinc-950 p-3 rounded-xl border border-zinc-800 font-mono text-[11px] text-center text-rose-400">
+          $$\% \text{C}_2\text{H}_2 = \frac{[\text{C}_2\text{H}_2]}{[\text{CH}_4] + [\text{C}_2\text{H}_4] + [\text{C}_2\text{H}_2]} \times 100$$
+        </div>
+      </div>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-[11px]">
+        <div class="p-2 rounded-lg bg-zinc-950 border border-zinc-800">
+          <strong class="text-indigo-400 block">PD (Partial Discharge):</strong> تفريغ جزئي في فجوات العزل الورقي.
+        </div>
+        <div class="p-2 rounded-lg bg-zinc-950 border border-zinc-800">
+          <strong class="text-amber-400 block">T1 / T2 ($T \le 700^\circ\text{C}$):</strong> سخونة موضعية وتفحم الورق.
+        </div>
+        <div class="p-2 rounded-lg bg-zinc-950 border border-zinc-800">
+          <strong class="text-orange-400 block">T3 ($T \gt 700^\circ\text{C}$):</strong> توهج النواقل وصهر النحاس والحديد.
+        </div>
+        <div class="p-2 rounded-lg bg-zinc-950 border border-zinc-800">
+          <strong class="text-rose-400 block">D1 / D2 (Arcing):</strong> تفريغات وقوس كهربائي عالي الطاقة.
+        </div>
+      </div>
+    </section>
+
+    <!-- 11: UHF PD & THERMOGRAPHY -->
+    <section class="slide w-full bg-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 shadow-2xl space-y-4" data-title="11. التفريغ الجزئي (UHF PD) والتصوير الحراري">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+          <span class="w-7 h-7 bg-indigo-600 rounded-lg text-xs flex items-center justify-center font-bold">11</span>
+          التفريغ الجزئي (UHF PD) والتصوير بالأشعة تحت الحمراء
+        </h3>
+        <span class="text-xs font-mono text-zinc-400 bg-zinc-800 px-2.5 py-1 rounded-lg">IEC 60270 & CIGRÉ WG D1.33</span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+        <div class="bg-zinc-950 p-4 rounded-2xl border border-zinc-800 space-y-2">
+          <h4 class="font-bold text-indigo-400">مستشعرات التردد فائق الارتفاع (UHF Sensors):</h4>
+          <p class="text-zinc-300 text-[11px] leading-relaxed">
+            تعمل في النطاق الترددي $300\text{ MHz} - 1.5\text{ GHz}$ لالتقاط النبضات الكهرومغناطيسية المنبعثة من التفريغات المجهرية داخل زيت المحول أو خلايا الـ GIS دون التأثر بالضوضاء البيئية.
+          </p>
+          <div class="p-2 bg-zinc-900 rounded font-mono text-[11px] text-indigo-300">
+            $$\text{PRPD Pattern: } q(\text{pC}) \quad \text{vs} \quad \phi \in [0^\circ, 360^\circ]$$
+          </div>
+        </div>
+        <div class="bg-zinc-950 p-4 rounded-2xl border border-zinc-800 space-y-2">
+          <h4 class="font-bold text-rose-400">معايير التقييم الحراري بالأشعة تحت الحمراء (IR $\Delta T$):</h4>
+          <ul class="list-disc list-inside text-zinc-300 text-[11px] space-y-1">
+            <li><strong>$\Delta T \lt 10^\circ\text{C}$:</strong> حالة طبيعية ومراقبة روتينية.</li>
+            <li><strong>$10^\circ\text{C} \le \Delta T \le 20^\circ\text{C}$:</strong> تنبيه صيانة مبرمجة لشد المسامير وتنظيف التلامسات.</li>
+            <li><strong>$20^\circ\text{C} \lt \Delta T \le 40^\circ\text{C}$:</strong> خطر مرتفع وإعادة توزيع الأحمال فوراً.</li>
+            <li><strong>$\Delta T \gt 40^\circ\text{C}$:</strong> فصل فوري للمعدة لمنع الانصهار وانفجار الخلية.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 12: FAULT LOCATOR TAKAGI -->
+    <section class="slide w-full bg-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 shadow-2xl space-y-4" data-title="12. محدد موقع الأعطال المعاوقي (Takagi)">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+          <span class="w-7 h-7 bg-indigo-600 rounded-lg text-xs flex items-center justify-center font-bold">12</span>
+          محدد موقع الأعطال المعاوقي (Takagi Fault Locator)
+        </h3>
+        <span class="text-xs font-mono text-zinc-400 bg-zinc-800 px-2.5 py-1 rounded-lg">IEEE Std C37.114</span>
+      </div>
+      <p class="text-xs md:text-sm text-zinc-300 leading-relaxed">
+        خوارزمية Takagi أحادية الطرف لتحديد المسافة الدقيقة لموقع العطل بالكيلومترات دون التأثر بمقاومة قوس العطل ($R_f$):
+      </p>
+      <div class="bg-zinc-950 p-4 rounded-2xl border border-zinc-800 font-mono text-xs text-center text-emerald-400">
+        $$m = \frac{\text{Im}(V_A \cdot I_{\text{sup}}^* Madden)}{\text{Im}(Z_L \cdot I_A \cdot I_{\text{sup}}^*)}$$
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+        <div class="bg-zinc-950 p-3 rounded-xl border border-zinc-800">
+          <span class="text-indigo-400 font-bold block">المسافة النسبية $m$:</span>
+          <span class="text-zinc-400 text-[11px]">نسبة موقع العطل من الطول الكلي للخط ($m \in [0, 1]$).</span>
+        </div>
+        <div class="bg-zinc-950 p-3 rounded-xl border border-zinc-800">
+          <span class="text-emerald-400 font-bold block">تيار التراكب $I_{\text{sup}}$:</span>
+          <span class="text-zinc-400 text-[11px]">الفرق الصافي بين تيار العطل وتيار ما قبل العطل ($I_f - I_{\text{pre}}$).</span>
+        </div>
+        <div class="bg-zinc-950 p-3 rounded-xl border border-zinc-800">
+          <span class="text-amber-400 font-bold block">معاوقة الخط $Z_L$:</span>
+          <span class="text-zinc-400 text-[11px]">المعاوقة الكلية المتسلسلة لخط النقل ($R + j\omega L$).</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 13: WAMS / PMU -->
+    <section class="slide w-full bg-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 shadow-2xl space-y-4" data-title="13. قياسات المتجهات اللحظية (WAMS / PMU)">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+          <span class="w-7 h-7 bg-indigo-600 rounded-lg text-xs flex items-center justify-center font-bold">13</span>
+          قياسات المتجهات اللحظية المتزامنة (WAMS / PMU)
+        </h3>
+        <span class="text-xs font-mono text-zinc-400 bg-zinc-800 px-2.5 py-1 rounded-lg">IEEE C37.118.1 / C37.118.2</span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+        <div class="bg-zinc-950 p-4 rounded-2xl border border-zinc-800 space-y-2">
+          <h4 class="font-bold text-indigo-400">المركبات المتماثلة لـ Fortescue:</h4>
+          <div class="p-2 bg-zinc-900 rounded font-mono text-[11px] text-indigo-300">
+            $$\begin{bmatrix} V_0 \\ V_1 \\ V_2 \end{bmatrix} = \frac{1}{3} \begin{bmatrix} 1 & 1 & 1 \\ 1 & a & a^2 \\ 1 & a^2 & a \end{bmatrix} \begin{bmatrix} V_A \\ V_B \\ V_C \end{bmatrix}$$
+          </div>
+          <p class="text-zinc-400 text-[11px]">
+            حيث معامل التدوير الطوري: $a = e^{j 120^\circ} = -\frac{1}{2} + j\frac{\sqrt{3}}{2}$.
+          </p>
+        </div>
+        <div class="bg-zinc-950 p-4 rounded-2xl border border-zinc-800 space-y-2">
+          <h4 class="font-bold text-emerald-400">معدل تغير التردد واستقرارية الشبكة (ROCOF):</h4>
+          <div class="p-2 bg-zinc-900 rounded font-mono text-[11px] text-emerald-300">
+            $$\text{ROCOF} = \frac{df}{dt} = \frac{f_0 \cdot \Delta P}{2 H \cdot S_{\text{system}}}$$
+          </div>
+          <p class="text-zinc-400 text-[11px]">
+            كشف التأرجحات البينية بين المحطات (Inter-Area Oscillations $0.1 - 2.0\text{ Hz}$) والتنبؤ بانهيار التزامن.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 14: TRANSFORMER THERMAL (DTR) -->
+    <section class="slide w-full bg-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 shadow-2xl space-y-4" data-title="14. النمذجة الحرارية وتقادم عزل المحولات (DTR)">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+          <span class="w-7 h-7 bg-indigo-600 rounded-lg text-xs flex items-center justify-center font-bold">14</span>
+          النمذجة الحرارية وتقادم عزل المحولات (Dynamic Thermal Rating)
+        </h3>
+        <span class="text-xs font-mono text-zinc-400 bg-zinc-800 px-2.5 py-1 rounded-lg">IEEE C57.91 & IEC 60076-7</span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+        <div class="bg-zinc-950 p-4 rounded-2xl border border-zinc-800 space-y-2">
+          <h4 class="font-bold text-indigo-400">معادلات ارتفاع حرارة الزيت والملفات:</h4>
+          <div class="p-2 bg-zinc-900 rounded font-mono text-[11px] text-indigo-300">
+            $$\tau_{\text{TO}} \frac{d\theta_{\text{TO}}}{dt} = \left[ \Delta\theta_{\text{TO,rated}} \left(\frac{1 + R K^2}{1 + R}\right)^n \right] - (\theta_{\text{TO}} - \theta_{\text{amb}})$$
+          </div>
+          <div class="p-2 bg-zinc-900 rounded font-mono text-[11px] text-emerald-300">
+            $$\tau_{\text{HS}} \frac{d\theta_{\text{HS}}}{dt} = \left[ \Delta\theta_{\text{HS,rated}} K^{2m} \right] - (\theta_{\text{HS}} - \theta_{\text{TO}})$$
+          </div>
+        </div>
+        <div class="bg-zinc-950 p-4 rounded-2xl border border-zinc-800 space-y-2">
+          <h4 class="font-bold text-rose-400">تسارع استهلاك العمر الافتراضي (Aging Acceleration Factor $F_{\text{AA}}$):</h4>
+          <div class="p-2 bg-zinc-900 rounded font-mono text-[11px] text-rose-300">
+            $$F_{\text{AA}} = \exp\left( \frac{15000}{383} - \frac{15000}{\theta_{\text{HS}} + 273} \right)$$
+          </div>
+          <p class="text-zinc-400 text-[11px] leading-relaxed">
+            عند $\theta_{\text{HS}} = 110^\circ\text{C} \implies F_{\text{AA}} = 1.0$. كل ارتفاع بمقدار $6^\circ\text{C}$ يضاعف معدل تقادم العزل الورقي بمقدار الضعف ($2\times$).
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 15: TCC CURVES -->
+    <section class="slide w-full bg-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 shadow-2xl space-y-4" data-title="15. منحنيات التنسيق الزماني-التياري (TCC Curves)">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+          <span class="w-7 h-7 bg-indigo-600 rounded-lg text-xs flex items-center justify-center font-bold">15</span>
+          منحنيات التنسيق الزماني-التياري (Time-Current Characteristics)
+        </h3>
+        <span class="text-xs font-mono text-zinc-400 bg-zinc-800 px-2.5 py-1 rounded-lg">IEC 60255 & IEEE C37.112</span>
+      </div>
+      <div class="bg-zinc-950 p-3.5 rounded-2xl border border-zinc-800 font-mono text-xs text-center text-indigo-400">
+        $$t(I) = \text{TMS} \times \left( \frac{A}{\left(\frac{I}{I_s}\right)^p - 1} + B \right)$$
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-right text-[11px] border border-zinc-800 rounded-xl overflow-hidden">
+          <thead class="bg-zinc-800 text-zinc-200">
+            <tr>
+              <th class="p-2">نوع المنحنى</th>
+              <th class="p-2">المعيار</th>
+              <th class="p-2 font-mono">A</th>
+              <th class="p-2 font-mono">p</th>
+              <th class="p-2 font-mono">B</th>
+              <th class="p-2">التطبيق الميداني</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-zinc-800 bg-zinc-950 text-zinc-300">
+            <tr>
+              <td class="p-2 font-bold text-indigo-400">IEC Standard Inverse (SI)</td>
+              <td class="p-2">IEC 60255</td>
+              <td class="p-2 font-mono">0.14</td>
+              <td class="p-2 font-mono">0.02</td>
+              <td class="p-2 font-mono">0.0</td>
+              <td class="p-2">المغذيات الإشعاعية العامة</td>
+            </tr>
+            <tr>
+              <td class="p-2 font-bold text-emerald-400">IEC Very Inverse (VI)</td>
+              <td class="p-2">IEC 60255</td>
+              <td class="p-2 font-mono">13.5</td>
+              <td class="p-2 font-mono">1.00</td>
+              <td class="p-2 font-mono">0.0</td>
+              <td class="p-2">الخطوط الطويلة ذات التغير الشديد بالتيار</td>
+            </tr>
+            <tr>
+              <td class="p-2 font-bold text-rose-400">IEC Extremely Inverse (EI)</td>
+              <td class="p-2">IEC 60255</td>
+              <td class="p-2 font-mono">80.0</td>
+              <td class="p-2 font-mono">2.00</td>
+              <td class="p-2 font-mono">0.0</td>
+              <td class="p-2">حماية المحولات والتنسيق مع المصهرات</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 16: BUSBAR DIFFERENTIAL PROTECTION ANSI 87B -->
+    <section class="slide w-full bg-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 shadow-2xl space-y-4" data-title="16. الحماية التفاضلية لقضبان التوزيع (ANSI 87B)">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+          <span class="w-7 h-7 bg-indigo-600 rounded-lg text-xs flex items-center justify-center font-bold">16</span>
+          الحماية التفاضلية لقضبان التوزيع (ANSI 87B Busbar Protection)
+        </h3>
+        <span class="text-xs font-mono text-zinc-400 bg-zinc-800 px-2.5 py-1 rounded-lg">Low-Impedance Numerical Differential</span>
+      </div>
+      <p class="text-xs md:text-sm text-zinc-300 leading-relaxed">
+        تعتبر قضبان التوزيع هي القلب النابض للمحطة. تقوم الحماية التفاضلية الرقمية بمراقبة مجموع التيارات المتجهة لجميع الخلايا المرتبطة بالقضيب:
+      </p>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+        <div class="bg-zinc-950 p-4 rounded-2xl border border-zinc-800 space-y-2">
+          <h4 class="font-bold text-indigo-400">تيار التشغيل وتيار الكبح (Diff & Bias Currents):</h4>
+          <div class="p-2 bg-zinc-900 rounded font-mono text-[11px] text-indigo-300">
+            $$I_{\text{diff}} = \left| \sum_{k=1}^{N} \vec{I}_k \right|, \quad I_{\text{bias}} = \frac{1}{2} \sum_{k=1}^{N} |\vec{I}_k|$$
+          </div>
+          <p class="text-zinc-400 text-[11px]">
+            في الحالة الطبيعية أو العطل الخارجي: $I_{\text{diff}} \approx 0$. عند حدوث قصر على القضيب: $I_{\text{diff}} = I_{\text{fault}} \gg 0$.
+          </p>
+        </div>
+        <div class="bg-zinc-950 p-4 rounded-2xl border border-zinc-800 space-y-2">
+          <h4 class="font-bold text-emerald-400">خاصية الميل المزدوج (Dual-Slope Restraint):</h4>
+          <div class="p-2 bg-zinc-900 rounded font-mono text-[11px] text-emerald-300">
+            $$\text{Slope 1: } K_1 = 20\% - 30\%, \quad \text{Slope 2: } K_2 = 60\% - 80\%$$
+          </div>
+          <p class="text-zinc-400 text-[11px]">
+            الميل الثاني يمنع الفصل الخاطئ عند حدوث عطل خارجي مصحوب بإشباع جزئي في محولات التيار (CT Saturation).
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 17: TRANSFORMER DIFFERENTIAL ANSI 87T -->
+    <section class="slide w-full bg-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 shadow-2xl space-y-4" data-title="17. الحماية التفاضلية للمحولات (ANSI 87T)">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+          <span class="w-7 h-7 bg-indigo-600 rounded-lg text-xs flex items-center justify-center font-bold">17</span>
+          الحماية التفاضلية لمحولات القدرة (ANSI 87T Differential Protection)
+        </h3>
+        <span class="text-xs font-mono text-zinc-400 bg-zinc-800 px-2.5 py-1 rounded-lg">Harmonic Restraint & Dyn11 Compensation</span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+        <div class="bg-zinc-950 p-4 rounded-2xl border border-zinc-800 space-y-2">
+          <h4 class="font-bold text-indigo-400">تعويض مجموعة المتجهات ($\text{Dyn11}$ Phase Shift):</h4>
+          <p class="text-zinc-300 text-[11px] leading-relaxed">
+            تقوم الحماية الرقمية بتصحيح فرق الطور $30^\circ$ بين ملفي الجهد العالي (Delta) والجهد المتوسط (Star) برمجياً دون الحاجة لمحولات تيار مساعدة موصولة دلتا:
+          </p>
+          <div class="p-2 bg-zinc-900 rounded font-mono text-[10px] text-indigo-300">
+            $$\vec{I}_{\text{LV, compensated}} = \frac{1}{\sqrt{3}} \begin{bmatrix} 1 & -1 & 0 \\ 0 & 1 & -1 \\ -1 & 0 & 1 \end{bmatrix} \begin{bmatrix} I_a \\ I_b \\ I_c \end{bmatrix}$$
+          </div>
+        </div>
+        <div class="bg-zinc-950 p-4 rounded-2xl border border-zinc-800 space-y-2">
+          <h4 class="font-bold text-amber-400">كبح التوافقي الثاني والخامس (2nd & 5th Harmonic Restraint):</h4>
+          <div class="p-2 bg-zinc-900 rounded font-mono text-[11px] text-amber-300 space-y-1">
+            <div>$$\frac{I_{2\text{nd}}}{I_{\text{fund}}} \gt 15\% \implies \text{Inrush Current (Block Trip)}$$</div>
+            <div>$$\frac{I_{5\text{th}}}{I_{\text{fund}}} \gt 25\% \implies \text{Overexcitation (Block Trip)}$$</div>
+          </div>
+          <p class="text-zinc-400 text-[11px]">
+            يميز بين تيارات الاندفاع المغناطيسي وتيارات الأعطال الداخلية الحقيقية.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 18: BREAKER FAILURE ANSI 50BF & AUTO-RECLOSE ANSI 79 -->
+    <section class="slide w-full bg-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 shadow-2xl space-y-4" data-title="18. إخفاق القاطع وإعادة الوصل (ANSI 50BF/79)">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+          <span class="w-7 h-7 bg-indigo-600 rounded-lg text-xs flex items-center justify-center font-bold">18</span>
+          حماية إخفاق القاطع وإعادة الوصل (ANSI 50BF & ANSI 79)
+        </h3>
+        <span class="text-xs font-mono text-zinc-400 bg-zinc-800 px-2.5 py-1 rounded-lg">Breaker Backup & Auto-Reclose Scheme</span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+        <div class="bg-zinc-950 p-4 rounded-2xl border border-zinc-800 space-y-2">
+          <h4 class="font-bold text-rose-400">حماية إخفاق القاطع (ANSI 50BF Logic):</h4>
+          <p class="text-zinc-300 text-[11px] leading-relaxed">
+            عند صدور أمر فصل ولم ينعدم التيار خلال مهلة $T_{\text{BF}} \approx 150 - 200\text{ ms}$:
+          </p>
+          <ul class="list-disc list-inside text-zinc-400 text-[11px] space-y-1">
+            <li><strong>Re-trip (50ms):</strong> محاولة فصل ثانية على ملف الفصل الاحتياطي Trip Coil 2.</li>
+            <li><strong>Back-trip GOOSE:</strong> إرسال رسائل GOOSE سريعة لفصل كافة القواطع المجاورة المرتبطة بنفس القضيب لعزل العطل تماماً.</li>
+          </ul>
+        </div>
+        <div class="bg-zinc-950 p-4 rounded-2xl border border-zinc-800 space-y-2">
+          <h4 class="font-bold text-emerald-400">إعادة الوصل التلقائي على الخطوط (ANSI 79):</h4>
+          <p class="text-zinc-300 text-[11px] leading-relaxed">
+            نظراً لأن أكثر من $85\%$ من أعطال الخطوط الهوائية هي أعطال عابرة:
+          </p>
+          <ul class="list-disc list-inside text-zinc-400 text-[11px] space-y-1">
+            <li><strong>زمن انعدام الجهد (Dead Time $0.3 - 1.0\text{ s}$):</strong> لتبدد القوس الكهربائي.</li>
+            <li><strong>فحص التزامن (ANSI 25 Check):</strong> قبل السماح بإعادة الوصل.</li>
+            <li><strong>القفل النهائي (Lockout 86):</strong> في حال استمرار العطل بعد الإغلاق.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 19: OT CYBER RANGE -->
+    <section class="slide w-full bg-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 shadow-2xl space-y-4" data-title="19. حقل الأمن السيبراني الصناعي (OT Cyber Range)">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+          <span class="w-7 h-7 bg-indigo-600 rounded-lg text-xs flex items-center justify-center font-bold">19</span>
+          حقل اختبارات ومحاكاة الأمن السيبراني (OT Cyber Range)
+        </h3>
+        <span class="text-xs font-mono text-zinc-400 bg-zinc-800 px-2.5 py-1 rounded-lg">NERC-CIP-005 & IEC 62443</span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+        <div class="bg-zinc-950 p-3.5 rounded-2xl border border-rose-900/50 space-y-2">
+          <div class="font-bold text-rose-400">1. هجوم تسميم GOOSE</div>
+          <p class="text-zinc-400 text-[11px] leading-relaxed">
+            حقن إطارات Ethernet رقمية برقم تسلسلي مزور ($\text{StNum} + 1$) لتنفيذ أوامر فتح قواطع وهمية في زمن أقل من 3ms.
+          </p>
+        </div>
+        <div class="bg-zinc-950 p-3.5 rounded-2xl border border-amber-900/50 space-y-2">
+          <div class="font-bold text-amber-400">2. هجوم حقن البيانات الكاذبة (FDI)</div>
+          <p class="text-zinc-400 text-[11px] leading-relaxed">
+            تعديل مصفوفة قراءات الـ SCADA التناظرية لحجب إشارات زيادة التيار وتضليل المشغلين في مركز التحكم.
+          </p>
+        </div>
+        <div class="bg-zinc-950 p-3.5 rounded-2xl border border-emerald-900/50 space-y-2">
+          <div class="font-bold text-emerald-400">3. منظومة الدفاع والاستجابة</div>
+          <p class="text-zinc-400 text-[11px] leading-relaxed">
+            عزل العقد المخترقة فورياً، وتفعيل التوقيع الرقمي للرسائل وفق IEC 62351، وعزل المنافذ عبر بروتوكول IEEE 802.1X.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 20: POWER QUALITY & HARMONICS (IEEE 519) -->
+    <section class="slide w-full bg-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 shadow-2xl space-y-4" data-title="20. جودة الطاقة والتوافقيات (IEEE 519)">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+          <span class="w-7 h-7 bg-indigo-600 rounded-lg text-xs flex items-center justify-center font-bold">20</span>
+          جودة الطاقة الكهربائية وتحليل التوافقيات (IEEE 519-2022)
+        </h3>
+        <span class="text-xs font-mono text-zinc-400 bg-zinc-800 px-2.5 py-1 rounded-lg">FFT Spectrum & K-Factor</span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+        <div class="bg-zinc-950 p-4 rounded-2xl border border-zinc-800 space-y-2">
+          <h4 class="font-bold text-indigo-400">التشوه التوافقي الكلي (Total Harmonic Distortion):</h4>
+          <div class="p-2 bg-zinc-900 rounded font-mono text-[11px] text-indigo-300">
+            $$\text{THD}_V = \frac{\sqrt{\sum_{h=2}^{50} V_h^2}}{V_1} \times 100\% \quad (\le 1.5\% \text{ for 132kV})$$
+          </div>
+          <div class="p-2 bg-zinc-900 rounded font-mono text-[11px] text-emerald-300">
+            $$\text{THD}_I = \frac{\sqrt{\sum_{h=2}^{50} I_h^2}}{I_1} \times 100\%$$
+          </div>
+        </div>
+        <div class="bg-zinc-950 p-4 rounded-2xl border border-zinc-800 space-y-2">
+          <h4 class="font-bold text-amber-400">عامل المحولات التوافقي ($K$-Factor ANSI C57.110):</h4>
+          <div class="p-2 bg-zinc-900 rounded font-mono text-[11px] text-amber-300">
+            $$K\text{-Factor} = \sum_{h=1}^{50} I_h^2 \cdot h^2$$
+          </div>
+          <p class="text-zinc-400 text-[11px] leading-relaxed">
+            يحدد قدرة المحول على تحمل التسخين الإضافي الناتج عن التيارات الدوامية التوافقية (Eddy Current Losses) لملفات النحاس.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 21: REGIONAL POWER FLOW (NEWTON-RAPHSON) -->
+    <section class="slide w-full bg-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 shadow-2xl space-y-4" data-title="21. تدفق القدرة في الشبكة الإقليمية (5-Bus Grid)">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+          <span class="w-7 h-7 bg-indigo-600 rounded-lg text-xs flex items-center justify-center font-bold">21</span>
+          تدفق القدرة في الشبكة الإقليمية (5-Bus Power Flow)
+        </h3>
+        <span class="text-xs font-mono text-zinc-400 bg-zinc-800 px-2.5 py-1 rounded-lg">Newton-Raphson & N-1 Contingency</span>
+      </div>
+      <div class="bg-zinc-950 p-3.5 rounded-2xl border border-zinc-800 font-mono text-xs text-center text-emerald-400">
+        $$\begin{bmatrix} \Delta P \\ \Delta Q \end{bmatrix} = \begin{bmatrix} J_{11} & J_{12} \\ J_{21} & J_{22} \end{bmatrix} \begin{bmatrix} \Delta \theta \\ \Delta |V| \end{bmatrix}$$
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+        <div class="bg-zinc-950 p-3.5 rounded-2xl border border-zinc-800 space-y-1.5">
+          <h4 class="font-bold text-indigo-400">مصفوفة الجاكوبي (Jacobian Matrix):</h4>
+          <p class="text-zinc-400 text-[11px] leading-relaxed">
+            تتألف من المشتقات الجزئية لمعادلات تدفق القدرة الفعالة وغير الفعالة عند كل قضيب من قضبان الشبكة الإقليمية الخمسة.
+          </p>
+        </div>
+        <div class="bg-zinc-950 p-3.5 rounded-2xl border border-zinc-800 space-y-1.5">
+          <h4 class="font-bold text-amber-400">تحليل الطوارئ ($N-1$ Contingency):</h4>
+          <p class="text-zinc-400 text-[11px] leading-relaxed">
+            محاكاة خروج خط النقل الرئيسي بين المحطة والشبكة القومية لضمان عدم تحميل الخطوط البديلة فوق طاقتها الحرارية القصوى.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 22: OTS SIMULATOR -->
+    <section class="slide w-full bg-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 shadow-2xl space-y-4" data-title="22. محاكي تدريب المشغلين (OTS Simulator)">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+          <span class="w-7 h-7 bg-indigo-600 rounded-lg text-xs flex items-center justify-center font-bold">22</span>
+          محاكي تدريب المشغلين (Operator Training Simulator - OTS)
+        </h3>
+        <span class="text-xs font-mono text-zinc-400 bg-zinc-800 px-2.5 py-1 rounded-lg">Interactive Scenario Engine</span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+        <div class="bg-zinc-950 p-3.5 rounded-2xl border border-zinc-800 space-y-2">
+          <div class="font-bold text-indigo-400">1. سيناريوهات الصيانة المخططة</div>
+          <p class="text-zinc-400 text-[11px] leading-relaxed">
+            تنفيذ بروتوكولات العزل والتأريض لمحولات القدرة وقضبان التوزيع وفق إجراءات العمل الآمنة ومصفوفة التعشيق.
+          </p>
+        </div>
+        <div class="bg-zinc-950 p-3.5 rounded-2xl border border-zinc-800 space-y-2">
+          <div class="font-bold text-rose-400">2. سيناريوهات الطوارئ والأعطال</div>
+          <p class="text-zinc-400 text-[11px] leading-relaxed">
+            محاكاة حوادث قصر أرضي، عطل تفاضلي، فقدان تبريد المحول، واستجابة المشغل السريعة لإعادة التغذية.
+          </p>
+        </div>
+        <div class="bg-zinc-950 p-3.5 rounded-2xl border border-emerald-400 space-y-2">
+          <div class="font-bold text-emerald-400">3. تقييم الأداء الآلي</div>
+          <p class="text-zinc-400 text-[11px] leading-relaxed">
+            احتساب زمن الاستجابة، ودقة المناورات، وتوليد تقرير أداء فوري موثق بنقاط تقييم هندسية دقيقة.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 23: SOE & RCA -->
+    <section class="slide w-full bg-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 shadow-2xl space-y-4" data-title="23. مسجل تسلسل الأحداث الميكروثانية (SOE & RCA)">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+          <span class="w-7 h-7 bg-indigo-600 rounded-lg text-xs flex items-center justify-center font-bold">23</span>
+          مسجل تسلسل الأحداث والتحليل الجذري (SOE & RCA)
+        </h3>
+        <span class="text-xs font-mono text-zinc-400 bg-zinc-800 px-2.5 py-1 rounded-lg">IEEE 1588 PTP Time Synchronization</span>
+      </div>
+      <div class="bg-zinc-950 p-4 rounded-2xl border border-zinc-800 font-mono text-[11px] text-zinc-300 space-y-1.5">
+        <div class="text-indigo-400 font-bold mb-2">سجل أحداث عطل أرضي لحظي بدقة ميكروثانية:</div>
+        <div class="flex justify-between border-b border-zinc-800/60 pb-1">
+          <span class="text-zinc-500 font-bold">00.000 ms</span>
+          <span class="text-zinc-300">Phase A-to-Ground Inception Arc detected</span>
+          <span class="text-amber-400">Process Bus</span>
+        </div>
+        <div class="flex justify-between border-b border-zinc-800/60 pb-1">
+          <span class="text-zinc-500 font-bold">04.200 ms</span>
+          <span class="text-zinc-300">IED 87T Differential element picked up</span>
+          <span class="text-indigo-400">Bay IED</span>
+        </div>
+        <div class="flex justify-between border-b border-zinc-800/60 pb-1">
+          <span class="text-zinc-500 font-bold">19.100 ms</span>
+          <span class="text-zinc-300">GOOSE Trip signal transmitted to Circuit Breaker 52-1</span>
+          <span class="text-emerald-400">IEC 61850</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-zinc-500 font-bold">38.400 ms</span>
+          <span class="text-zinc-300">Circuit Breaker contacts fully separated & arc extinguished</span>
+          <span class="text-rose-400">SF6 CB</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 24: BESS 10MW/40MWH -->
+    <section class="slide w-full bg-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 shadow-2xl space-y-4" data-title="24. بطاريات تخزين الطاقة (BESS 10MW/40MWh)">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+          <span class="w-7 h-7 bg-indigo-600 rounded-lg text-xs flex items-center justify-center font-bold">24</span>
+          منظومة بطاريات تخزين الطاقة (BESS 10MW / 40MWh)
+        </h3>
+        <span class="text-xs font-mono text-zinc-400 bg-zinc-800 px-2.5 py-1 rounded-lg">Grid-Forming Inverters</span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+        <div class="bg-zinc-950 p-4 rounded-2xl border border-zinc-800 space-y-2">
+          <h4 class="font-bold text-indigo-400">القصور الذاتي الاصطناعي (Synthetic Inertia):</h4>
+          <div class="p-2 bg-zinc-900 rounded font-mono text-[11px] text-indigo-300">
+            $$P_{\text{inertia}} = -2 H_{\text{virt}} \cdot S_{\text{BESS}} \cdot \frac{df}{dt}$$
+          </div>
+          <p class="text-zinc-400 text-[11px] leading-relaxed">
+            حقن فوري للقدرة الفعالة خلال أجزاء من الثانية لمعاكسة هبوط التردد وتثبيت استقرارية المنظومة.
+          </p>
+        </div>
+        <div class="bg-zinc-950 p-4 rounded-2xl border border-zinc-800 space-y-2">
+          <h4 class="font-bold text-emerald-400">تنظيم التردد والجهد (Droop Control $P-f$ & $Q-V$):</h4>
+          <div class="p-2 bg-zinc-900 rounded font-mono text-[11px] text-emerald-300 space-y-1">
+            <div>$$\Delta P = -K_f \cdot (f_{\text{meas}} - f_{\text{nom}})$$</div>
+            <div>$$\Delta Q = -K_v \cdot (|V_{\text{meas}}| - |V_{\text{nom}}|)$$</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 25: ASSET HEALTH INDEX (AHI) -->
+    <section class="slide w-full bg-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 shadow-2xl space-y-4" data-title="25. مؤشر صحة الأصول (AHI - Cigré TB 761)">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+          <span class="w-7 h-7 bg-indigo-600 rounded-lg text-xs flex items-center justify-center font-bold">25</span>
+          مؤشر صحة الأصول الهندسية (Asset Health Index - AHI)
+        </h3>
+        <span class="text-xs font-mono text-zinc-400 bg-zinc-800 px-2.5 py-1 rounded-lg">CIGRÉ TB 761 & IEC 60599</span>
+      </div>
+      <div class="bg-zinc-950 p-3.5 rounded-2xl border border-zinc-800 font-mono text-xs text-center text-emerald-400">
+        $$\text{AHI} = \frac{\sum_{i=1}^{M} w_i \cdot S_i(t)}{\sum_{i=1}^{M} w_i} \times 100$$
+      </div>
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-2 text-[11px]">
+        <div class="p-2.5 bg-zinc-950 rounded-xl border border-zinc-800">
+          <span class="text-indigo-400 font-bold block">DGA Duval (25%):</span> تركيز ونسب الغازات الذائبة.
+        </div>
+        <div class="p-2.5 bg-zinc-950 rounded-xl border border-zinc-800">
+          <span class="text-emerald-400 font-bold block">Oil Quality (20%):</span> جهد الانهيار والرطوبة.
+        </div>
+        <div class="p-2.5 bg-zinc-950 rounded-xl border border-zinc-800">
+          <span class="text-amber-400 font-bold block">Furans & DP (20%):</span> درجة بلمرة السليولوز الورقي.
+        </div>
+        <div class="p-2.5 bg-zinc-950 rounded-xl border border-zinc-800">
+          <span class="text-rose-400 font-bold block">Thermal History (15%):</span> تاريخ إجهادات النقطة الساخنة.
+        </div>
+        <div class="p-2.5 bg-zinc-950 rounded-xl border border-zinc-800">
+          <span class="text-cyan-400 font-bold block">OLTC Health (10%):</span> تآكل نقاط تلامس مغير التفرعات.
+        </div>
+        <div class="p-2.5 bg-zinc-950 rounded-xl border border-zinc-800">
+          <span class="text-purple-400 font-bold block">UHF PD (10%):</span> مستويات التفريغ الجزئي في البوشينغ.
+        </div>
+      </div>
+    </section>
+
+    <!-- 26: TRANSFORMER LOSSES & TCO -->
+    <section class="slide w-full bg-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 shadow-2xl space-y-4" data-title="26. فواقد المحولات والجدوى الاقتصادية (TCO)">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+          <span class="w-7 h-7 bg-indigo-600 rounded-lg text-xs flex items-center justify-center font-bold">26</span>
+          فواقد المحولات والجدوى الاقتصادية لدورة الحياة (TCO)
+        </h3>
+        <span class="text-xs font-mono text-zinc-400 bg-zinc-800 px-2.5 py-1 rounded-lg">Life Cycle Cost Optimization</span>
+      </div>
+      <div class="bg-zinc-950 p-4 rounded-2xl border border-zinc-800 font-mono text-xs text-center text-amber-400">
+        $$\text{TCO} = C_{\text{purchase}} + A \cdot P_0 + B \cdot P_k$$
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+        <div class="bg-zinc-950 p-3.5 rounded-2xl border border-zinc-800 space-y-1.5">
+          <h4 class="font-bold text-indigo-400">فواقد اللاحمل (No-Load Losses $P_0$):</h4>
+          <p class="text-zinc-400 text-[11px] leading-relaxed">
+            الفواقد المغناطيسية المستمرة في القلب الحديدي (Hysteresis & Eddy Current Losses)، ويبلغ معامل رسملتها $A \approx 6,000 - 9,000 \ \$/\text{kW}$.
+          </p>
+        </div>
+        <div class="bg-zinc-950 p-3.5 rounded-2xl border border-zinc-800 space-y-1.5">
+          <h4 class="font-bold text-emerald-400">فواقد الحمل الكامل (Load Copper Losses $P_k$):</h4>
+          <p class="text-zinc-400 text-[11px] leading-relaxed">
+            الفواقد الحرارية في ملفات النحاس الناتجة عن تيار الحمل ($I^2 R$)، ويبلغ معامل رسملتها $B \approx 2,000 - 4,000 \ \$/\text{kW}$.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 27: IEC 61850 COMMUNICATION -->
+    <section class="slide w-full bg-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 shadow-2xl space-y-4" data-title="27. بروتوكولات IEC 61850 (GOOSE, SV, MMS)">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+          <span class="w-7 h-7 bg-indigo-600 rounded-lg text-xs flex items-center justify-center font-bold">27</span>
+          معمارية شبكات الاتصالات IEC 61850 (GOOSE, SV, MMS)
+        </h3>
+        <span class="text-xs font-mono text-zinc-400 bg-zinc-800 px-2.5 py-1 rounded-lg">IEC 61850-8-1 & IEC 61850-9-2LE</span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+        <div class="bg-zinc-950 p-3.5 rounded-2xl border border-zinc-800 space-y-2">
+          <div class="font-bold text-rose-400">1. رسائل GOOSE السريعة</div>
+          <p class="text-zinc-400 text-[11px] leading-relaxed">
+            تعمل مباشرة فوق طبقة ربط البيانات (Layer 2) بزمن انتقال $\le 3\text{ ms}$ لنقل أوامر الفصل المتشابك وإشارات الحماية.
+          </p>
+        </div>
+        <div class="bg-zinc-950 p-3.5 rounded-2xl border border-zinc-800 space-y-2">
+          <div class="font-bold text-emerald-400">2. عينات القيم اللحظية (SV)</div>
+          <p class="text-zinc-400 text-[11px] leading-relaxed">
+            بث عينات الجهد والتيار الرقمية من وحدات الدمج (Merging Units) بمعدل $4000\text{ samples/sec}$ عبر ناقل الـ Process Bus.
+          </p>
+        </div>
+        <div class="bg-zinc-950 p-3.5 rounded-2xl border border-indigo-400 space-y-2">
+          <div class="font-bold text-indigo-400">3. خدمات التصنيع (MMS)</div>
+          <p class="text-zinc-400 text-[11px] leading-relaxed">
+            اتصالات موجهة (TCP/IP Port 102) لنقل قراءات SCADA، وضبط الإعدادات، واسترجاع سجلات الأحداث من المرحلات.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 28: ACOUSTIC SYNTHESIZER -->
+    <section class="slide w-full bg-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 shadow-2xl space-y-4" data-title="28. المحرك الصوتي التوليدي الواقعي">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+          <span class="w-7 h-7 bg-indigo-600 rounded-lg text-xs flex items-center justify-center font-bold">28</span>
+          المحرك الصوتي التوليدي الواقعي (Web Audio API Synthesizer)
+        </h3>
+        <span class="text-xs font-mono text-zinc-400 bg-zinc-800 px-2.5 py-1 rounded-lg">Real-Time Electromagnetic Acoustics</span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+        <div class="bg-zinc-950 p-3.5 rounded-2xl border border-zinc-800 space-y-2">
+          <div class="font-bold text-indigo-400">طنين المحول الكهرومغناطيسي</div>
+          <p class="text-zinc-400 text-[11px] leading-relaxed">
+            محاكاة ظاهرة التقبض المغناطيسي (Magnetostriction) لصفائح السيليكون الصلب بترددات توافقية $100\text{ Hz}$ و $200\text{ Hz}$.
+          </p>
+        </div>
+        <div class="bg-zinc-950 p-3.5 rounded-2xl border border-zinc-800 space-y-2">
+          <div class="font-bold text-rose-400">انفجار قواطع الـ SF6</div>
+          <p class="text-zinc-400 text-[11px] leading-relaxed">
+            محاكاة صوت التفريغ الهوائي الميكانيكي، وانضغاط غاز الـ SF6 وإخماد القوس الكهربائي عند فتح القاطع.
+          </p>
+        </div>
+        <div class="bg-zinc-950 p-3.5 rounded-2xl border border-amber-400 space-y-2">
+          <div class="font-bold text-amber-400">أزيز تفريغ الهالة (Corona)</div>
+          <p class="text-zinc-400 text-[11px] leading-relaxed">
+            توليد ضوضاء عالية التردد تحاكي تأين جزيئات الهواء الرطب حول عوازل وبوشينغات الـ 132 ك.ف.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 29: CELLULOSE DEPOLYMERIZATION & FURANS -->
+    <section class="slide w-full bg-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 shadow-2xl space-y-4" data-title="29. بلمرة العزل الورقي (DP & 2-FAL Furans)">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+          <span class="w-7 h-7 bg-indigo-600 rounded-lg text-xs flex items-center justify-center font-bold">29</span>
+          بلمرة العزل الورقي السليولوزي ومركبات الفيورانات
+        </h3>
+        <span class="text-xs font-mono text-zinc-400 bg-zinc-800 px-2.5 py-1 rounded-lg">IEC 61198 & Chendong Equation</span>
+      </div>
+      <div class="bg-zinc-950 p-4 rounded-2xl border border-zinc-800 font-mono text-xs text-center text-emerald-400">
+        $$\text{DP} = \frac{1.51 - \log_{10}(2\text{-FAL in ppm})}{0.0035}$$
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+        <div class="bg-zinc-950 p-3 rounded-xl border border-emerald-900/50">
+          <span class="text-emerald-400 font-bold block">ورق جديد سليم:</span>
+          <span class="text-zinc-300 text-[11px]">$\text{DP} \ge 1000 - 1200$<br>$2\text{-FAL} \lt 0.01\text{ ppm}$</span>
+        </div>
+        <div class="bg-zinc-950 p-3 rounded-xl border border-amber-900/50">
+          <span class="text-amber-400 font-bold block">تقادم معتدل:</span>
+          <span class="text-zinc-300 text-[11px]">$\text{DP} \approx 500 - 700$<br>$2\text{-FAL} \approx 0.1 - 0.5\text{ ppm}$</span>
+        </div>
+        <div class="bg-zinc-950 p-3 rounded-xl border border-rose-900/50">
+          <span class="text-rose-400 font-bold block">نهاية العمر الحرج:</span>
+          <span class="text-zinc-300 text-[11px]">$\text{DP} \le 200$<br>$2\text{-FAL} \ge 5.0\text{ ppm}$ (هشاشة الورق)</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 30: DUVAL PENTAGON -->
+    <section class="slide w-full bg-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 shadow-2xl space-y-4" data-title="30. خماسي دوفال المتقدم (Duval Pentagon)">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+          <span class="w-7 h-7 bg-indigo-600 rounded-lg text-xs flex items-center justify-center font-bold">30</span>
+          خماسي دوفال المتقدم لتشخيص الغازات الخمسة
+        </h3>
+        <span class="text-xs font-mono text-zinc-400 bg-zinc-800 px-2.5 py-1 rounded-lg">Duval Pentagon 1 & 2 (CIGRÉ)</span>
+      </div>
+      <div class="bg-zinc-950 p-3.5 rounded-2xl border border-zinc-800 font-mono text-xs text-center text-indigo-400 space-y-1">
+        <div>$$x = \sum_{k=1}^{5} \%G_k \cdot \cos\left(\frac{2\pi (k-1)}{5}\right), \quad y = \sum_{k=1}^{5} \%G_k \cdot \sin\left(\frac{2\pi (k-1)}{5}\right)$$</div>
+      </div>
+      <p class="text-xs text-zinc-300 leading-relaxed">
+        إسقاط النسب المئوية للغازات الخمسة ($\text{H}_2, \text{CH}_4, \text{C}_2\text{H}_6, \text{C}_2\text{H}_4, \text{C}_2\text{H}_2$) على رؤوس مضلع خماسي منتظم بزاوية $72^\circ$ لكل رأس للتمييز بين تفحم العزل الورقي والتفريغات في الزيت.
+      </p>
+    </section>
+
+    <!-- 31: FERRORESONANCE & GIC -->
+    <section class="slide w-full bg-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 shadow-2xl space-y-4" data-title="31. ظاهرة الرنين الحديدي والعواصف الشمسية (GIC)">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+          <span class="w-7 h-7 bg-indigo-600 rounded-lg text-xs flex items-center justify-center font-bold">31</span>
+          ظاهرة الرنين الحديدي والعواصف الشمسية (Ferroresonance & GIC)
+        </h3>
+        <span class="text-xs font-mono text-zinc-400 bg-zinc-800 px-2.5 py-1 rounded-lg">Non-Linear Core Dynamics</span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+        <div class="bg-zinc-950 p-4 rounded-2xl border border-zinc-800 space-y-2">
+          <h4 class="font-bold text-amber-400">الرنين الحديدي اللاخطي (Ferroresonance):</h4>
+          <p class="text-zinc-300 text-[11px] leading-relaxed">
+            يحدث نتيجة تفاعل السعة الطفيلية للخطوط ($C$) مع محاثة المحول غير الخطية القابلة للإشباع ($L_{\text{sat}}$) مسبباً جهوداً عابرة مدمرة تفوق $3.0\text{ p.u.}$.
+          </p>
+          <div class="p-2 bg-zinc-900 rounded font-mono text-[11px] text-amber-300">
+            $$\omega L_{\text{sat}}(i) = \frac{1}{\omega C_{\text{line}}} \implies \text{Severe Overvoltages}$$
+          </div>
+        </div>
+        <div class="bg-zinc-950 p-4 rounded-2xl border border-zinc-800 space-y-2">
+          <h4 class="font-bold text-rose-400">التيارات المستحثة جيومغناطيسياً (GIC):</h4>
+          <p class="text-zinc-300 text-[11px] leading-relaxed">
+            تدفق تيارات مستمرة شبه ثابتة ($\text{Quasi-DC}$) عبر نقطة تأريض محايد المحول أثناء العواصف الشمسية، مسببة إزاحة الفيض وتسخيناً مفرطاً للخزان.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 32: ALARM MANAGEMENT ISA-18.2 -->
+    <section class="slide w-full bg-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 shadow-2xl space-y-4" data-title="32. هندسة الإنذارات الإشرافية (ISA-18.2)">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+          <span class="w-7 h-7 bg-indigo-600 rounded-lg text-xs flex items-center justify-center font-bold">32</span>
+          هندسة الإنذارات الإشرافية ومنع طوفان التنبيهات
+        </h3>
+        <span class="text-xs font-mono text-zinc-400 bg-zinc-800 px-2.5 py-1 rounded-lg">ISA-18.2 / IEC 62682 / EEMUA 191</span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+        <div class="bg-zinc-950 p-4 rounded-2xl border border-zinc-800 space-y-2">
+          <h4 class="font-bold text-indigo-400">المعدلات المعيارية للإنذارات:</h4>
+          <ul class="list-disc list-inside text-zinc-300 text-[11px] space-y-1">
+            <li><strong>المعدل المستقر:</strong> $\le 1\text{ alarm / 10 minutes}$ لكل مشغل.</li>
+            <li><strong>طوفان الإنذارات (Alarm Flood):</strong> أكثر من 10 إنذارات في فترة 10 دقائق.</li>
+          </ul>
+        </div>
+        <div class="bg-zinc-950 p-4 rounded-2xl border border-zinc-800 space-y-2">
+          <h4 class="font-bold text-emerald-400">تقنيات المعالجة الذكية في المنظومة:</h4>
+          <ul class="list-disc list-inside text-zinc-300 text-[11px] space-y-1">
+            <li><strong>الترشيح القائم على الحالة (State-Based Suppression):</strong> كتم إنذارات المعدات الخارجة للصيانة.</li>
+            <li><strong>كشف أول من عمل (First-Out Indication):</strong> إبراز الإنذار المسبب الأولي وتمييز التوابع.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 33: STATE ESTIMATION & BAD DATA -->
+    <section class="slide w-full bg-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 shadow-2xl space-y-4" data-title="33. تقدير حالة الشبكة وكشف البيانات الخاطئة">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+          <span class="w-7 h-7 bg-indigo-600 rounded-lg text-xs flex items-center justify-center font-bold">33</span>
+          تقدير حالة الشبكة وكشف البيانات الخاطئة (State Estimation)
+        </h3>
+        <span class="text-xs font-mono text-zinc-400 bg-zinc-800 px-2.5 py-1 rounded-lg">Weighted Least Squares (WLS)</span>
+      </div>
+      <div class="bg-zinc-950 p-3.5 rounded-2xl border border-zinc-800 font-mono text-xs text-center text-indigo-400">
+        $$\min_{\mathbf{x}} J(\mathbf{x}) = [\mathbf{z} - \mathbf{h}(\mathbf{x})]^T \mathbf{R}^{-1} [\mathbf{z} - \mathbf{h}(\mathbf{x})]$$
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+        <div class="bg-zinc-950 p-3.5 rounded-2xl border border-zinc-800 space-y-1.5">
+          <h4 class="font-bold text-emerald-400">فحص مربع كاي ($\chi^2 \text{ Test}$):</h4>
+          <p class="text-zinc-400 text-[11px] leading-relaxed">
+            التحقق من الدقة الإحصائية الشاملة للقياسات التناظرية الواردة واكتشاف وجود أخطاء قياس أو تلاعب سيبراني.
+          </p>
+        </div>
+        <div class="bg-zinc-950 p-3.5 rounded-2xl border border-zinc-800 space-y-1.5">
+          <h4 class="font-bold text-rose-400">الفروق المعيارية (Normalized Residuals $r_N$):</h4>
+          <p class="text-zinc-400 text-[11px] leading-relaxed">
+            تحديد القراءة الدقيقة الفاسدة أو الخاطئة واستبعادها تلقائياً عند تجاوز $r_{N, i} \gt 3.0$.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 34: TESTING & COMMISSIONING -->
+    <section class="slide w-full bg-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 shadow-2xl space-y-4" data-title="34. بروتوكولات الاختبارات والتشغيل التجريبي">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+          <span class="w-7 h-7 bg-indigo-600 rounded-lg text-xs flex items-center justify-center font-bold">34</span>
+          بروتوكولات الاختبارات الموقعية والتشغيل التجريبي
+        </h3>
+        <span class="text-xs font-mono text-zinc-400 bg-zinc-800 px-2.5 py-1 rounded-lg">Site Acceptance Testing (SAT)</span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+        <div class="space-y-2">
+          <div class="bg-zinc-950 p-3 rounded-xl border border-zinc-800">
+            <strong class="text-indigo-400 block mb-1">1. حقن التيار الابتدائي والثانوي (Injection Tests):</strong>
+            <p class="text-zinc-400 text-[11px]">التحقق من نسب تحويل وقطبية الـ CTs والـ VTs واتجاهية مراحل الحماية الرقمية.</p>
+          </div>
+          <div class="bg-zinc-950 p-3 rounded-xl border border-zinc-800">
+            <strong class="text-emerald-400 block mb-1">2. مراقبة دوائر الفصل (Trip Circuit Supervision ANSI 95):</strong>
+            <p class="text-zinc-400 text-[11px]">مراقبة استمرارية دوائر ملفات الفصل TC1 و TC2 في وضعي القاطع المفتوح والمغلق.</p>
+          </div>
+        </div>
+        <div class="space-y-2">
+          <div class="bg-zinc-950 p-3 rounded-xl border border-zinc-800">
+            <strong class="text-amber-400 block mb-1">3. قياس معامل الفقد العزلي ($\tan\delta$ & Tan Delta):</strong>
+            <p class="text-zinc-400 text-[11px]">فحص جودة العوازل الزيتية والبوشينغات وخلوها من الرطوبة والشوائب.</p>
+          </div>
+          <div class="bg-zinc-950 p-3 rounded-xl border border-zinc-800">
+            <strong class="text-rose-400 block mb-1">4. اختبارات نهاية إلى نهاية (End-to-End Testing):</strong>
+            <p class="text-zinc-400 text-[11px]">حقن متزامن باستخدام وحدات GPS لاختبار حماية الخطوط التفاضلية والمسافية.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 35: VSC-HVDC MMC INTERTIE -->
+    <section class="slide w-full bg-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 shadow-2xl space-y-4" data-title="35. الربط الذكي بنواقل VSC-HVDC">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+          <span class="w-7 h-7 bg-cyan-600 rounded-lg text-xs flex items-center justify-center font-bold">35</span>
+          الربط الذكي بنواقل التيار المستمر عالي الجهد (VSC-HVDC MMC)
+        </h3>
+        <span class="text-xs font-mono text-cyan-400 bg-cyan-950 px-2.5 py-1 rounded-lg border border-cyan-800">Modular Multilevel Converter</span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+        <div class="bg-zinc-950 p-4 rounded-xl border border-zinc-800 space-y-2">
+          <h4 class="font-bold text-cyan-400">التحكم المستقل بالقدرة الفعالة وغير الفعالة ($P-Q$ Decoupled):</h4>
+          <p class="text-zinc-300 text-[11px] leading-relaxed">
+            التحكم المتجهي في إحداثيات $d-q$ الدوارة يتيح تغذية واستجرار القدرة الفعالة والتحكم بجهد نقطة الربط بشكل مستقل:
+          </p>
+          <div class="p-2 bg-zinc-900 rounded font-mono text-center text-cyan-300">
+            $$P = \frac{3}{2} v_d i_d, \quad Q = -\frac{3}{2} v_d i_q$$
+          </div>
+        </div>
+        <div class="bg-zinc-950 p-4 rounded-xl border border-zinc-800 space-y-2">
+          <h4 class="font-bold text-emerald-400">القصور الذاتي الاصطناعي (Synthetic Inertia):</h4>
+          <p class="text-zinc-300 text-[11px] leading-relaxed">
+            استغلال الطاقة الكهروستاتيكية المخزونة في مكثفات المحول MMC لتوفير استجابة ترددية فائقة السرعة تمنع انهيار التردد (ROCOF Mitigation) خلال أول $100\text{ ms}$ من الاضطراب.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 36: GREEN HYDROGEN MICROGRID -->
+    <section class="slide w-full bg-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 shadow-2xl space-y-4" data-title="36. الهيدروجين الأخضر وخلايا الوقود">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+          <span class="w-7 h-7 bg-emerald-600 rounded-lg text-xs flex items-center justify-center font-bold">36</span>
+          الشبكة المصغرة للهيدروجين الأخضر وخلايا الوقود
+        </h3>
+        <span class="text-xs font-mono text-emerald-400 bg-emerald-950 px-2.5 py-1 rounded-lg border border-emerald-800">PEM Electrolyzer & Fuel Cell</span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+        <div class="bg-zinc-950 p-4 rounded-xl border border-zinc-800 space-y-2">
+          <h4 class="font-bold text-emerald-400">محلل الماء الكهرلي (PEM Electrolyzer 2MW):</h4>
+          <p class="text-zinc-300 text-[11px] leading-relaxed">
+            استغلال فائض الطاقة الشمسية في إنتاج الهيدروجين الأخضر بكفاءة فاراداي تتجاوز 98%:
+          </p>
+          <div class="p-2 bg-zinc-900 rounded font-mono text-center text-emerald-300">
+            $$\dot{m}_{\text{H}_2} = \eta_F \cdot \frac{N_{\text{cells}} \cdot I_{\text{stack}}}{2F}$$
+          </div>
+        </div>
+        <div class="bg-zinc-950 p-4 rounded-xl border border-zinc-800 space-y-2">
+          <h4 class="font-bold text-amber-400">تخزين الضغط العالي وإعادة التوليد:</h4>
+          <p class="text-zinc-300 text-[11px] leading-relaxed">
+            تخزين الهيدروجين في أسطوانات معزولة عند ضغط $350\text{ bar}$، وتشغيل خلايا الوقود لإعادة حقن الطاقة في أوقات ذروة الأحمال ودعم إعادة التشغيل بعد الإظلام التام (Black Start).
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 37: DISTANCE PROTECTION ANSI 21 -->
+    <section class="slide w-full bg-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 shadow-2xl space-y-4" data-title="37. حماية المسافة الرقمية (ANSI 21)">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+          <span class="w-7 h-7 bg-indigo-600 rounded-lg text-xs flex items-center justify-center font-bold">37</span>
+          حماية المسافة الرقمية خماسية المناطق (ANSI 21 & R-X Plane)
+        </h3>
+        <span class="text-xs font-mono text-indigo-400 bg-indigo-950 px-2.5 py-1 rounded-lg border border-indigo-800">Mho & Quad Impedance Zones</span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+        <div class="bg-zinc-950 p-4 rounded-xl border border-zinc-800 space-y-2">
+          <h4 class="font-bold text-indigo-400">توزيع مناطق المعاوقة الزمنية:</h4>
+          <ul class="list-disc list-inside space-y-1 text-zinc-300 text-[11px]">
+            <li><strong>Zone 1 (Instantaneous 80-85%):</strong> $t_1 \le 20\text{ ms}$ دون أي تأخير.</li>
+            <li><strong>Zone 2 (Overreaching 120%):</strong> $t_2 = 300\text{ ms}$ كاحتياطي للخط.</li>
+            <li><strong>Zone 3 (Reverse Backup 20%):</strong> $t_3 = 600\text{ ms}$ كحماية خلفية للقضبان.</li>
+          </ul>
+        </div>
+        <div class="bg-zinc-950 p-4 rounded-xl border border-zinc-800 space-y-2">
+          <h4 class="font-bold text-rose-400">حاجب تأرجح القدرة (Power Swing Blocking):</h4>
+          <p class="text-zinc-300 text-[11px] leading-relaxed">
+            التمييز بين تغيرات المعاوقة الناتجة عن أعطال حقيقية وتلك الناتجة عن التذبذبات الكهروميكانيكية المتناغمة للمولدات عبر مراقبة معدل تغير مسار المعاوقة $dZ/dt$ في المستوى $R-X$.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 38: INDUSTRIAL PROTOCOLS & COMTRADE -->
+    <section class="slide w-full bg-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 shadow-2xl space-y-4" data-title="38. محاكي البروتوكولات وسجلات COMTRADE">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+          <span class="w-7 h-7 bg-amber-600 rounded-lg text-xs flex items-center justify-center font-bold">38</span>
+          محاكي البروتوكولات الصناعية ومولد سجلات COMTRADE
+        </h3>
+        <span class="text-xs font-mono text-amber-400 bg-amber-950 px-2.5 py-1 rounded-lg border border-amber-800">Modbus TCP / IEC 60870-5-104 / COMTRADE</span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+        <div class="bg-zinc-950 p-4 rounded-xl border border-zinc-800 space-y-2">
+          <h4 class="font-bold text-amber-400">محاكي Modbus TCP و IEC 60870-5-104:</h4>
+          <p class="text-zinc-300 text-[11px] leading-relaxed">
+            خريطة حية لسجلات الـ Holding Registers وسجلات الدخل وإشارات الـ Coils مع تفكيك إطارات الـ ASDU الخام واختبارات الربط مع مراكز التحكم الإقليمية (SCADA/EMS).
+          </p>
+        </div>
+        <div class="bg-zinc-950 p-4 rounded-xl border border-zinc-800 space-y-2">
+          <h4 class="font-bold text-cyan-400">توليد ملفات COMTRADE (IEEE C37.111):</h4>
+          <p class="text-zinc-300 text-[11px] leading-relaxed">
+            تصدير أشكال الموجات الجهدية والتيارية بدقة الميكروثانية وتوفير الملفات الثلاثية القياسية (`.HDR`, `.CFG`, `.DAT`) لتغذية أجهزة اختبار الحماية التلقائية (مثل Omicron و Doble).
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 39: RADAR TDR & BLOCKCHAIN -->
+    <section class="slide w-full bg-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 shadow-2xl space-y-4" data-title="39. كشف أعطال الكابلات وسجل البلوكشين">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+          <span class="w-7 h-7 bg-indigo-600 rounded-lg text-xs flex items-center justify-center font-bold">39</span>
+          كاشف أعطال الكابلات (TDR) وسجل البلوكشين غير القابل للتعديل
+        </h3>
+        <span class="text-xs font-mono text-indigo-400 bg-indigo-950 px-2.5 py-1 rounded-lg border border-indigo-800">Radar Reflection & SHA-256 Cryptography</span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+        <div class="bg-zinc-950 p-4 rounded-xl border border-zinc-800 space-y-2">
+          <h4 class="font-bold text-indigo-400">محدد أعطال الكابلات بالموجات المنعكسة (TDR):</h4>
+          <p class="text-zinc-300 text-[11px] leading-relaxed">
+            إرسال نبضات رادار كهرومغناطيسية وحساب موقع العطل بدقة مترية عبر قياس زمن وصول الصدى المنعكس ومعامل الانعكاس $\Gamma$:
+          </p>
+          <div class="p-1.5 bg-zinc-900 rounded font-mono text-center text-indigo-300">
+            $$d = \frac{v \cdot \Delta t}{2}, \quad v = \frac{c}{\sqrt{\varepsilon_r}}$$
+          </div>
+        </div>
+        <div class="bg-zinc-950 p-4 rounded-xl border border-zinc-800 space-y-2">
+          <h4 class="font-bold text-emerald-400">سجل البلوكشين الموزع لتوثيق العمليات:</h4>
+          <p class="text-zinc-300 text-[11px] leading-relaxed">
+            تشفير كل عملية مناورة أو تعديل لضبط الحمايات ببصمة $\text{SHA-256}$ مشفرة تربط رقم البلوك والتاريخ وهوية المشغل لمنع التلاعب وتأمين التحقيق الجنائي الرقمي.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 40: CONCLUSION & FUTURE OUTLOOK -->
+    <section class="slide w-full bg-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 shadow-2xl space-y-4 text-zinc-300" data-title="40. الخلاصة الهندسية والتطبيقات المستقبلية">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+          <span class="w-7 h-7 bg-indigo-600 rounded-lg text-xs flex items-center justify-center font-bold">40</span>
+          الخلاصة الهندسية والتطبيقات المستقبلية
+        </h3>
+        <span class="text-xs font-mono text-emerald-400 bg-emerald-950 px-2.5 py-1 rounded-lg border border-emerald-800">Conclusion & Vision</span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+        <div class="bg-zinc-950 p-4 rounded-xl border border-zinc-800 space-y-2">
+          <h4 class="font-bold text-emerald-400 text-xs">الإنجازات والنتائج المحققة:</h4>
+          <ul class="list-disc list-inside space-y-1.5 text-xs text-zinc-300">
+            <li>بناء توأم رقمي متكامل لمحطة 132/13.8 ك.ف يحقق المعايير الدولية بدقة متناهية.</li>
+            <li>توفير بيئة تدريب واختبارات حماية ترفع جاهزية المهندسين وتلغي مخاطر المناورات الخاطئة.</li>
+            <li>حماية الأصول والتنبؤ المبكر بالأعطال عبر تحليل الغازات DGA ومؤشر AHI.</li>
+            <li>محاكاة متقدمة للأمن السيبراني الصناعي والاتصالات وفق IEC 61850.</li>
+          </ul>
+        </div>
+        <div class="bg-zinc-950 p-4 rounded-xl border border-zinc-800 space-y-2">
+          <h4 class="font-bold text-indigo-400 text-xs">آفاق التطوير والبحث المستقبلي:</h4>
+          <ul class="list-disc list-inside space-y-1.5 text-xs text-zinc-300">
+            <li>دمج نماذج الذكاء الاصطناعي التوليدي والتنبؤي في التشخيص الآلي الذاتي للأعطال.</li>
+            <li>التوسع نحو محطات الطاقة المتجددة الهجينة ومحللات الهيدروجين الأخضر.</li>
+            <li>الربط المباشر مع بروتوكولات OPC-UA و DNP3 في البيئات الميدانية السحابية.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="text-center pt-3 border-t border-zinc-800 text-xs text-zinc-400">
+        تم إعداد هذا البحث والتطبيق الهندسي المرجعي بواسطة: <strong class="text-indigo-400">م. حيدرة ديب</strong> & <strong class="text-emerald-400">م. عيسى نجار</strong> — 2026
+      </div>
+    </section>
+
+  </main>
+
+  <!-- BOTTOM CONTROLS -->
+  <footer class="no-print bg-zinc-900/90 backdrop-blur border-t border-zinc-800 px-4 py-2.5 flex items-center justify-between text-xs text-zinc-400 sticky bottom-0 z-40">
+    <div class="flex items-center gap-2">
+      <span class="font-bold text-zinc-300">التنقل:</span>
+      <kbd class="px-2 py-0.5 bg-zinc-800 text-zinc-300 rounded border border-zinc-700 font-mono">◀️</kbd> التالي
+      <kbd class="px-2 py-0.5 bg-zinc-800 text-zinc-300 rounded border border-zinc-700 font-mono">▶️</kbd> السابق
+      <kbd class="px-2 py-0.5 bg-zinc-800 text-zinc-300 rounded border border-zinc-700 font-mono">Home</kbd> البداية
+    </div>
+    <div class="flex items-center gap-2">
+      <button onclick="prevSlide()" class="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-lg font-bold transition border border-zinc-700 cursor-pointer">▶️ السابق</button>
+      <button onclick="nextSlide()" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold transition shadow cursor-pointer">التالي ◀️</button>
+    </div>
+  </footer>
+
+  <!-- SCRIPT LOGIC -->
+  <script>
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    const totalSlides = slides.length;
+    const slideSelect = document.getElementById('slideSelect');
+
+    // Populate dropdown
+    slides.forEach((slide, idx) => {
+      const title = slide.getAttribute('data-title') || ('شريحة ' + (idx + 1));
+      const opt = document.createElement('option');
+      opt.value = idx;
+      opt.innerText = title;
+      slideSelect.appendChild(opt);
+    });
+
+    function showSlide(index) {
+      if (index < 0) index = 0;
+      if (index >= totalSlides) index = totalSlides - 1;
+      currentSlide = index;
+
+      slides.forEach((s, idx) => {
+        if (idx === currentSlide) s.classList.add('active');
+        else s.classList.remove('active');
+      });
+
+      const indicator = document.getElementById('slideIndicator');
+      if (indicator) indicator.innerText = (currentSlide + 1) + ' / ' + totalSlides;
+
+      if (slideSelect) slideSelect.value = currentSlide;
+
+      const progress = document.getElementById('progressBar');
+      if (progress) progress.style.width = ((currentSlide + 1) / totalSlides * 100) + '%';
+
+      if (window.MathJax && window.MathJax.typesetPromise) {
+        window.MathJax.typesetPromise();
+      }
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function nextSlide() { if (currentSlide < totalSlides - 1) showSlide(currentSlide + 1); }
+    function prevSlide() { if (currentSlide > 0) showSlide(currentSlide - 1); }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(err => console.log(err));
+      else if (document.exitFullscreen) document.exitFullscreen();
+    }
+
+    slideSelect.addEventListener('change', function(e) {
+      showSlide(parseInt(e.target.value, 10));
+    });
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'ArrowLeft' || e.key === 'PageDown' || e.key === ' ') nextSlide();
+      else if (e.key === 'ArrowRight' || e.key === 'PageUp') prevSlide();
+      else if (e.key === 'Home') showSlide(0);
+      else if (e.key === 'End') showSlide(totalSlides - 1);
+    });
+
+    // Initialize
+    showSlide(0);
+
+    // ================= PPTX EXPORT ENGINE =================
+    function cleanMathForPptx(text) {
+      if (!text) return '';
+      return text
+        .replace(/\$\$(.*?)\$\$/gs, '$1')
+        .replace(/\$(.*?)\$/gs, '$1')
+        .replace(/\\text\{([^}]+)\}/g, '$1')
+        .replace(/\\mathbf\{([^}]+)\}/g, '$1')
+        .replace(/\\mathrm\{([^}]+)\}/g, '$1')
+        .replace(/\\bm\{([^}]+)\}/g, '$1')
+        .replace(/\\Delta/g, 'Δ')
+        .replace(/\\mu/g, 'μ')
+        .replace(/\\Omega/g, 'Ω')
+        .replace(/\\theta/g, 'θ')
+        .replace(/\\phi/g, 'φ')
+        .replace(/\\alpha/g, 'α')
+        .replace(/\\beta/g, 'β')
+        .replace(/\\gamma/g, 'γ')
+        .replace(/\\lambda/g, 'λ')
+        .replace(/\\tau/g, 'τ')
+        .replace(/\\chi/g, 'χ')
+        .replace(/\\times/g, ' × ')
+        .replace(/\\cdot/g, ' · ')
+        .replace(/\\le/g, ' ≤ ')
+        .replace(/\\ge/g, ' ≥ ')
+        .replace(/\\pm/g, ' ± ')
+        .replace(/\\approx/g, ' ≈ ')
+        .replace(/\\neq/g, ' ≠ ')
+        .replace(/\\infty/g, ' ∞ ')
+        .replace(/\\sqrt\{([^}]+)\}/g, '√($1)')
+        .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1 / $2)')
+        .replace(/_\{([^}]+)\}/g, '_$1')
+        .replace(/\^\{([^}]+)\}/g, '^$1')
+        .replace(/\\\\/g, ' | ')
+        .replace(/\\,/g, ' ')
+        .replace(/\\quad/g, '  ')
+        .replace(/\\left/g, '')
+        .replace(/\\right/g, '')
+        .trim();
+    }
+
+    function showPptxToast(msg, isSuccess = false) {
+      let toast = document.getElementById('pptx-toast');
+      if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'pptx-toast';
+        toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl shadow-2xl border flex items-center gap-3 text-sm font-bold transition-all duration-300 pointer-events-none';
+        document.body.appendChild(toast);
+      }
+      if (isSuccess) {
+        toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl shadow-2xl border border-emerald-500 bg-emerald-950/95 text-emerald-200 flex items-center gap-3 text-sm font-bold transition-all duration-300 pointer-events-none';
+      } else {
+        toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl shadow-2xl border border-amber-500 bg-zinc-900/95 text-amber-300 flex items-center gap-3 text-sm font-bold transition-all duration-300 pointer-events-none';
+      }
+      toast.innerHTML = msg;
+      toast.style.opacity = '1';
+      toast.style.transform = 'translate(-50%, 0)';
+      
+      if (isSuccess) {
+        setTimeout(() => {
+          if (toast) {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translate(-50%, 10px)';
+          }
+        }, 4000);
+      }
+    }
+
+    async function exportToPPTX() {
+      const btn = document.getElementById('btnExportPptx');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span>⏳</span><span>جاري التصدير...</span>';
+      }
+
+      const slideElements = document.querySelectorAll('.slide');
+      showPptxToast(`⚡ جاري إعداد وتوليد ${slideElements.length} شريحة PowerPoint بصيغة PPTX...`);
+
+      try {
+        if (typeof PptxGenJS === 'undefined') {
+          throw new Error('مكتبة PptxGenJS لم يتم تحميلها بعد، يرجى المحاولة بعد ثوانٍ');
+        }
+
+        const pres = new PptxGenJS();
+        pres.layout = 'LAYOUT_16x9';
+        pres.author = 'م. حيدرة ديب & م. عيسى نجار';
+        pres.company = 'Digital Twin SCADA & SAS Substation 132/13.8 kV';
+        pres.title = 'الموسوعة الأكاديمية التفاعلية للتوأم الرقمي ونظام SCADA & SAS 132/13.8kV';
+        pres.subject = 'Engineering Research & Presentation on 132/13.8kV Digital Substation';
+
+        // Color Palette
+        const BG_COLOR = '0B1120'; // Deep Dark Navy
+        const CARD_BG = '162238';  // Darker Slate Card
+        const CARD_BORDER = '283856';
+        const CYAN_ACCENT = '38BDF8';
+        const EMERALD_ACCENT = '34D399';
+        const AMBER_ACCENT = 'FBBF24';
+        const INDIGO_ACCENT = '818CF8';
+        const TEXT_MAIN = 'F1F5F9';
+        const TEXT_MUTED = '94A3B8';
+
+        // Process all slides from the DOM
+        const slideElements = document.querySelectorAll('.slide');
+
+        slideElements.forEach((el, index) => {
+          const slide = pres.addSlide();
+          slide.background = { color: BG_COLOR };
+
+          // 1. Footer Bar on every slide
+          slide.addShape(pres.ShapeType.rect, {
+            x: 0,
+            y: 7.0,
+            w: 13.33,
+            h: 0.5,
+            fill: { color: '070B14' },
+            line: { color: '1E293B', width: 1 }
+          });
+
+          slide.addText(`الموسوعة الهندسية للتوأم الرقمي ونظام SCADA & SAS 132/13.8 kV  |  إعداد: م. حيدرة ديب & م. عيسى نجار`, {
+            x: 0.5,
+            y: 7.05,
+            w: 10.0,
+            h: 0.35,
+            fontFace: 'Arial',
+            fontSize: 9,
+            color: TEXT_MUTED,
+            rtlMode: true,
+            align: 'right'
+          });
+
+          slide.addText(`${index + 1} / ${slideElements.length}`, {
+            x: 11.5,
+            y: 7.05,
+            w: 1.3,
+            h: 0.35,
+            fontFace: 'Arial',
+            fontSize: 9,
+            color: CYAN_ACCENT,
+            bold: true,
+            align: 'center'
+          });
+
+          // Check if Cover Slide (Index 0)
+          if (index === 0) {
+            // Top Badge
+            slide.addShape(pres.ShapeType.roundRect, {
+              x: 2.2,
+              y: 0.8,
+              w: 8.93,
+              h: 0.45,
+              rectRadius: 0.2,
+              fill: { color: '1E1B4B' },
+              line: { color: '4338CA', width: 1 }
+            });
+            slide.addText('⚡ بحث وتطبيق هندسي متقدم في أتمتة المحطات الرقمية والشبكات الذكية', {
+              x: 2.2,
+              y: 0.82,
+              w: 8.93,
+              h: 0.4,
+              fontFace: 'Arial',
+              fontSize: 12,
+              color: 'C7D2FE',
+              bold: true,
+              align: 'center',
+              rtlMode: true
+            });
+
+            // Main Title
+            slide.addText('منظومة التوأم الرقمي والتحكم الإشرافي (SCADA & SAS)', {
+              x: 0.8,
+              y: 1.45,
+              w: 11.73,
+              h: 1.0,
+              fontFace: 'Arial',
+              fontSize: 26,
+              color: TEXT_MAIN,
+              bold: true,
+              align: 'center',
+              rtlMode: true
+            });
+
+            // Subtitle
+            slide.addText('محطة التحويل الكهربائية الرئيسية 132/13.8 ك.ف', {
+              x: 0.8,
+              y: 2.45,
+              w: 11.73,
+              h: 0.6,
+              fontFace: 'Arial',
+              fontSize: 20,
+              color: EMERALD_ACCENT,
+              bold: true,
+              align: 'center',
+              rtlMode: true
+            });
+
+            // Description
+            slide.addText('دراسة مرجعية تتضمن النمذجة الفيزيائية بالزمن الحقيقي، التزامن (ANSI 25)، غلق نقطة الموجة (PoW)، الحماية التفاضلية للقضبان والمحولات (ANSI 87B/87T)، التقييم الحراري (IEEE C57.91)، تحليل الغازات (DGA Duval)، منحنيات التنسيق الزماني-التياري (TCC)، واختبارات الأمن السيبراني (NERC-CIP).', {
+              x: 1.2,
+              y: 3.15,
+              w: 10.93,
+              h: 1.0,
+              fontFace: 'Arial',
+              fontSize: 11,
+              color: TEXT_MUTED,
+              align: 'center',
+              rtlMode: true
+            });
+
+            // Author Box 1
+            slide.addShape(pres.ShapeType.roundRect, {
+              x: 6.8,
+              y: 4.35,
+              w: 5.0,
+              h: 1.5,
+              rectRadius: 0.15,
+              fill: { color: CARD_BG },
+              line: { color: '4338CA', width: 1.5 }
+            });
+            slide.addText('تصميم أنظمة SCADA والتوأم الرقمي:\nم. حيدرة ديب\nSCADA, SAS Architect & Software Systems Specialist', {
+              x: 6.9,
+              y: 4.45,
+              w: 4.8,
+              h: 1.3,
+              fontFace: 'Arial',
+              fontSize: 12,
+              color: TEXT_MAIN,
+              bold: false,
+              align: 'right',
+              rtlMode: true
+            });
+
+            // Author Box 2
+            slide.addShape(pres.ShapeType.roundRect, {
+              x: 1.5,
+              y: 4.35,
+              w: 5.0,
+              h: 1.5,
+              rectRadius: 0.15,
+              fill: { color: CARD_BG },
+              line: { color: '059669', width: 1.5 }
+            });
+            slide.addText('هندسة القوى وأنظمة الحماية المتقدمة:\nم. عيسى نجار\nPower Systems, High Voltage & Numerical Protection Specialist', {
+              x: 1.6,
+              y: 4.45,
+              w: 4.8,
+              h: 1.3,
+              fontFace: 'Arial',
+              fontSize: 12,
+              color: TEXT_MAIN,
+              bold: false,
+              align: 'right',
+              rtlMode: true
+            });
+
+            // Standards list
+            slide.addText('المعايير المعتمدة: IEC 61850 | IEC 60255 | IEEE C57.91 | IEEE 1584 | IEEE 519 | IEEE C37.118 | ISA-18.2 | NERC-CIP', {
+              x: 0.8,
+              y: 6.1,
+              w: 11.73,
+              h: 0.4,
+              fontFace: 'Arial',
+              fontSize: 10,
+              color: CYAN_ACCENT,
+              align: 'center'
+            });
+
+            return; // Finished cover slide
+          }
+
+          // === STANDARD SLIDES (2 to 35) ===
+          const rawTitle = el.getAttribute('data-title') || el.querySelector('h3, h2')?.innerText || `شريحة ${index + 1}`;
+          const badgeText = el.querySelector('.text-mono, .font-mono, span.bg-zinc-800, span.bg-indigo-950, span.bg-emerald-950')?.innerText || 'SCADA & SAS Engineering';
+
+          // Slide Header Card
+          slide.addShape(pres.ShapeType.rect, {
+            x: 0.5,
+            y: 0.4,
+            w: 12.33,
+            h: 0.85,
+            fill: { color: '111C30' },
+            line: { color: CARD_BORDER, width: 1 }
+          });
+
+          // Title Number Tag
+          slide.addShape(pres.ShapeType.roundRect, {
+            x: 12.1,
+            y: 0.52,
+            w: 0.55,
+            h: 0.55,
+            rectRadius: 0.1,
+            fill: { color: '4F46E5' }
+          });
+          slide.addText(`${index + 1}`, {
+            x: 12.1,
+            y: 0.52,
+            w: 0.55,
+            h: 0.55,
+            fontFace: 'Arial',
+            fontSize: 14,
+            color: 'FFFFFF',
+            bold: true,
+            align: 'center'
+          });
+
+          // Slide Title
+          slide.addText(rawTitle.replace(/^\d+\.\s*/, ''), {
+            x: 3.5,
+            y: 0.45,
+            w: 8.4,
+            h: 0.7,
+            fontFace: 'Arial',
+            fontSize: 16,
+            color: TEXT_MAIN,
+            bold: true,
+            align: 'right',
+            rtlMode: true
+          });
+
+          // Slide Badge
+          slide.addShape(pres.ShapeType.roundRect, {
+            x: 0.7,
+            y: 0.55,
+            w: 2.6,
+            h: 0.5,
+            rectRadius: 0.1,
+            fill: { color: '1E293B' },
+            line: { color: '334155', width: 1 }
+          });
+          slide.addText(badgeText.trim(), {
+            x: 0.7,
+            y: 0.57,
+            w: 2.6,
+            h: 0.45,
+            fontFace: 'Arial',
+            fontSize: 9,
+            color: CYAN_ACCENT,
+            bold: true,
+            align: 'center'
+          });
+
+          // Parse Slide Content Blocks
+          // Check for tables first
+          const tableEl = el.querySelector('table');
+          const pElements = Array.from(el.querySelectorAll('p:not(.text-zinc-400), .leading-relaxed'));
+          const gridEl = el.querySelector('.grid');
+          const mathBlocks = Array.from(el.querySelectorAll('.font-mono, [class*="math"], script[type*="math"]'));
+
+          let startY = 1.45;
+
+          // If Table Exists: Format as native PPTX table
+          if (tableEl) {
+            const rows = Array.from(tableEl.querySelectorAll('tr'));
+            const pptxTableData = [];
+
+            rows.forEach((r, rIdx) => {
+              const cells = Array.from(r.querySelectorAll('th, td'));
+              const rowData = cells.map(c => {
+                const isHeader = rIdx === 0 || c.tagName.toLowerCase() === 'th';
+                return {
+                  text: cleanMathForPptx(c.innerText.trim()),
+                  options: {
+                    fill: { color: isHeader ? '1E3A8A' : (rIdx % 2 === 0 ? '162238' : '0F172A') },
+                    color: isHeader ? 'FFFFFF' : TEXT_MAIN,
+                    fontFace: 'Arial',
+                    fontSize: isHeader ? 10 : 9,
+                    bold: isHeader,
+                    align: 'center',
+                    valign: 'middle'
+                  }
+                };
+              });
+              if (rowData.length > 0) pptxTableData.push(rowData);
+            });
+
+            if (pptxTableData.length > 0) {
+              slide.addTable(pptxTableData, {
+                x: 0.8,
+                y: startY,
+                w: 11.73,
+                colW: Array(pptxTableData[0].length).fill(11.73 / pptxTableData[0].length),
+                border: { color: '334155', width: 1 },
+                autoPage: false
+              });
+              startY += (pptxTableData.length * 0.4) + 0.4;
+            }
+          }
+
+          // If Grid Cards Exist:
+          if (gridEl) {
+            const cards = Array.from(gridEl.children);
+            const numCards = Math.min(cards.length, 6);
+            
+            if (numCards > 0 && startY < 6.0) {
+              const cols = numCards <= 2 ? numCards : (numCards === 3 ? 3 : 2);
+              const cardW = (11.73 - (cols - 1) * 0.3) / cols;
+              const cardH = numCards > 3 ? 2.2 : (6.6 - startY);
+
+              cards.slice(0, 6).forEach((card, cIdx) => {
+                const col = cIdx % cols;
+                const row = Math.floor(cIdx / cols);
+                const cX = 0.8 + col * (cardW + 0.3);
+                const cY = startY + row * (cardH + 0.25);
+
+                if (cY + cardH <= 6.9) {
+                  slide.addShape(pres.ShapeType.roundRect, {
+                    x: cX,
+                    y: cY,
+                    w: cardW,
+                    h: cardH,
+                    rectRadius: 0.12,
+                    fill: { color: CARD_BG },
+                    line: { color: CARD_BORDER, width: 1 }
+                  });
+
+                  const cardTitle = card.querySelector('h4, div.font-bold, span.font-bold')?.innerText || '';
+                  const cardText = card.innerText.replace(cardTitle, '').trim();
+
+                  let formattedCardContent = [];
+                  if (cardTitle) {
+                    formattedCardContent.push({
+                      text: cardTitle.trim() + '\n',
+                      options: { fontFace: 'Arial', fontSize: 11, bold: true, color: AMBER_ACCENT, breakLine: true }
+                    });
+                  }
+                  if (cardText) {
+                    formattedCardContent.push({
+                      text: cleanMathForPptx(cardText),
+                      options: { fontFace: 'Arial', fontSize: 9.5, color: TEXT_MAIN }
+                    });
+                  }
+
+                  if (formattedCardContent.length > 0) {
+                    slide.addText(formattedCardContent, {
+                      x: cX + 0.15,
+                      y: cY + 0.15,
+                      w: cardW - 0.3,
+                      h: cardH - 0.3,
+                      align: 'right',
+                      rtlMode: true,
+                      valign: 'top'
+                    });
+                  }
+                }
+              });
+              startY += (Math.ceil(numCards / cols) * (cardH + 0.25));
+            }
+          } else {
+            // General content box
+            const innerText = cleanMathForPptx(el.innerText)
+              .replace(rawTitle, '')
+              .replace(badgeText, '')
+              .trim();
+
+            if (innerText && startY < 6.2) {
+              slide.addShape(pres.ShapeType.roundRect, {
+                x: 0.8,
+                y: startY,
+                w: 11.73,
+                h: 6.6 - startY,
+                rectRadius: 0.15,
+                fill: { color: CARD_BG },
+                line: { color: CARD_BORDER, width: 1 }
+              });
+
+              slide.addText(innerText, {
+                x: 1.0,
+                y: startY + 0.2,
+                w: 11.33,
+                h: 6.2 - startY,
+                fontFace: 'Arial',
+                fontSize: 11,
+                color: TEXT_MAIN,
+                align: 'right',
+                rtlMode: true,
+                valign: 'top'
+              });
+            }
+          }
+        });
+
+        // Save Presentation file
+        const fileName = 'Digital_Twin_SCADA_SAS_Presentation_132_13.8kV.pptx';
+        await pres.writeFile({ fileName });
+
+        showPptxToast(`✅ تم إنشاء وتحميل ملف العرض التقديمي (${fileName}) بنجاح!`, true);
+
+      } catch (err) {
+        console.error('Error exporting PPTX:', err);
+        showPptxToast('❌ حدث خطأ أثناء إنشاء ملف PPTX: ' + (err.message || err));
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<span>📊</span><span>تحميل PPTX</span>';
+        }
+      }
+    }
+
+    // ================= PDF EXPORT ENGINE =================
+    async function exportToPDF() {
+      const btn = document.getElementById('btnExportPdf');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span>⏳</span><span>جاري التحضير للطباعة...</span>';
+      }
+      showPptxToast('⚡ جاري تجهيز كافة الشرائح وتنسيق الطباعة بصيغة PDF...', true);
+
+      try {
+        if (window.MathJax && window.MathJax.typesetPromise) {
+          await window.MathJax.typesetPromise();
+        }
+        setTimeout(() => {
+          window.focus();
+          window.print();
+          if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<span>🖨️</span><span>تحميل PDF</span>';
+          }
+        }, 400);
+      } catch (err) {
+        console.error('PDF print error:', err);
+        window.print();
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<span>🖨️</span><span>تحميل PDF</span>';
+        }
+      }
+    }
+
+    // Listen for postMessage from parent React applet
+    window.addEventListener('message', (event) => {
+      if (event && event.data) {
+        if (event.data.type === 'EXPORT_PPTX') {
+          exportToPPTX();
+        } else if (event.data.type === 'EXPORT_PDF' || event.data.type === 'PRINT_PDF') {
+          exportToPDF();
+        }
+      }
+    });
+  </script>
+</body>
+</html>
