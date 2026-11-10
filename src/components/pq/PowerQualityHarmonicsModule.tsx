@@ -108,15 +108,14 @@ export const PowerQualityHarmonicsModule: React.FC = () => {
     spectrumData.filter((d) => d.order > 1).reduce((sum, d) => sum + Math.pow(d.currentPct, 2), 0)
   );
 
-  // Compute IEEE C57.110 K-Factor: K = sum( (I_h / I_1)^2 * h^2 )
-  const kFactor = Number(
-    (
-      1.0 +
-      spectrumData
-        .filter((d) => d.order > 1)
-        .reduce((sum, d) => sum + Math.pow(d.currentPct / 100.0, 2) * Math.pow(d.order, 2), 0)
-    ).toFixed(2)
-  );
+  // Compute IEEE C57.110 K-Factor: K = sum( I_h(pu)^2 * h^2 ) normalized to total RMS current
+  const sumIh2 = 1.0 + Math.pow(thdI / 100.0, 2);
+  const sumWeighted =
+    1.0 +
+    spectrumData
+      .filter((d) => d.order > 1)
+      .reduce((sum, d) => sum + Math.pow(d.currentPct / 100.0, 2) * Math.pow(d.order, 2), 0);
+  const kFactor = Number((sumWeighted / sumIh2).toFixed(2));
 
   // Transformer Derating Factor: Pec-r = 0.15 for standard 40MVA core
   const pecR = 0.15;
@@ -382,7 +381,7 @@ export const PowerQualityHarmonicsModule: React.FC = () => {
             variables={[
               { symbol: 'K', label: isAr ? 'معامل التوافقيات المحسوب K' : 'Calculated Harmonic K-Factor', value: kFactor.toFixed(2), unit: '' },
               { symbol: 'P_EC-R', label: isAr ? 'معامل خسائر التيارات الدوامية النسبي' : 'Per-Unit Eddy Current Loss Factor', value: '0.15', unit: 'pu' },
-              { symbol: 'MVA_rated', label: isAr ? 'القدرة الاسمية على لوحة المحول' : 'Nameplate Rating', value: '50.0', unit: 'MVA' },
+              { symbol: 'MVA_rated', label: isAr ? 'القدرة الاسمية على لوحة المحول' : 'Nameplate Rating', value: ratingMva.toFixed(1), unit: 'MVA' },
               { symbol: 'THD_I', label: isAr ? 'التشوه التوافقي الكلي للتيار' : 'Total Current Distortion', value: thdI.toFixed(1), unit: '%' }
             ]}
             result={{

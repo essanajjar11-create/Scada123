@@ -1888,7 +1888,12 @@ export const ScadaProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }
 
         // SOC evolution based on active power
-        const deltaMWhPct = (pMW / 40.0) * (scanRateMs / 3600000) * 100.0 * (pMW >= 0 ? 0.95 : 1.05);
+        // Injecting (pMW > 0) discharges battery; drawing/charging (pMW < 0) charges battery
+        const dtHours = scanRateMs / 3600000;
+        const bessCapacityMWh = 40.0;
+        const deltaMWhPct = pMW >= 0
+          ? -(pMW / bessCapacityMWh) * dtHours * (1 / 0.95) * 100.0 // Discharging: battery loses P / eta
+          : (-pMW / bessCapacityMWh) * dtHours * 0.95 * 100.0;      // Charging: battery gains |P| * eta
         const newSoc = Math.max(5.0, Math.min(98.0, prevBess.socPct + deltaMWhPct));
 
         return commitBess({

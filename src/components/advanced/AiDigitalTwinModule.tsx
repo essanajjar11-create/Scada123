@@ -30,9 +30,22 @@ export const AiDigitalTwinModule: React.FC = () => {
   // Delta between PINN model and physical sensors
   const deltaT = Math.abs(pinnTemp - (activeTelemetry?.oilTemp ?? 62.4));
 
-  // Weibull Hazard Rate calculation h(t)
+  // Weibull Mean Time To Failure: MTTF = eta * Gamma(1 + 1/beta)
+  // Lanczos approximation of Gamma(z)
+  const gammaWeibull = (b: number): number => {
+    const z = 1 + 1 / b;
+    const p = [
+      0.99999999999980993, 676.5203681218851, -1259.1392167224028,
+      771.32342877765313, -176.61502916214059, 12.507343278686905,
+      -0.13857109583115912, 9.9843695780195716e-6, 1.5056327351493116e-7,
+    ];
+    let x = p[0];
+    for (let i = 1; i < 9; i++) x += p[i] / (z - 1 + i);
+    const t = z - 1 + 7 + 0.5;
+    return Math.sqrt(2 * Math.PI) * Math.pow(t, z - 1 + 0.5) * Math.exp(-t) * x;
+  };
   const currentHours = 22450;
-  const mttfYears = (weibullEta * Math.exp(1 / weibullBeta)) / 8760;
+  const mttfYears = (weibullEta * gammaWeibull(weibullBeta)) / 8760;
 
   return (
     <div className="space-y-4 font-sans text-slate-100">

@@ -90,7 +90,7 @@ export const DynamicRatingModule: React.FC = () => {
         </div>
 
         <div className="bg-zinc-900 border border-zinc-800 px-4 py-2 rounded-xl flex items-center gap-3">
-          <span className="text-xs font-mono text-zinc-400">{t('dtr_nameplate')} <strong className="text-white">50.0 MVA</strong></span>
+          <span className="text-xs font-mono text-zinc-400">{t('dtr_nameplate')} <strong className="text-white">{nameplateMVA.toFixed(1)} MVA</strong></span>
           <span className="text-zinc-600">|</span>
           <span className="text-xs font-mono text-amber-400">{t('dtr_dynamic_cap')} <strong className="text-amber-300 text-sm">{dynamicRatingMVA.toFixed(1)} MVA</strong></span>
         </div>
@@ -118,7 +118,7 @@ export const DynamicRatingModule: React.FC = () => {
               <div className="w-full bg-zinc-950 h-3 rounded-full overflow-hidden border border-zinc-800">
                 <div
                   className="bg-amber-500 h-full transition-all duration-500"
-                  style={{ width: `${Math.min(100, (dynamicRatingMVA / 75.0) * 100)}%` }}
+                  style={{ width: `${Math.min(100, (dynamicRatingMVA / 60.0) * 100)}%` }}
                 ></div>
               </div>
 
@@ -149,7 +149,7 @@ export const DynamicRatingModule: React.FC = () => {
                   className={`h-full transition-all duration-500 ${
                     appliedLoadMVA > dynamicRatingMVA ? 'bg-rose-500' : 'bg-indigo-500'
                   }`}
-                  style={{ width: `${Math.min(100, (appliedLoadMVA / 75.0) * 100)}%` }}
+                  style={{ width: `${Math.min(100, (appliedLoadMVA / 60.0) * 100)}%` }}
                 ></div>
               </div>
 
@@ -304,8 +304,8 @@ export const DynamicRatingModule: React.FC = () => {
             </div>
             <input
               type="range"
-              min="30"
-              max="70"
+              min="15"
+              max="60"
               step="0.5"
               value={appliedLoadMVA}
               onChange={(e) => setAppliedLoadMVA(parseFloat(e.target.value))}

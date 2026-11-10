@@ -18,8 +18,10 @@ export const GisFaultLocatorModule: React.FC = () => {
 
   // Takagi Distance Calculation Formula:
   // d = Im(V_f * I_s*) / Im(Z_L * I_f * I_s*)
+  // Using loop reactance X = (V_f / I_f) * sin(phi_f), with fault angle phi ~ 75° (sin ~ 0.966)
+  const loopReactance = (faultVoltageV / Math.max(1, faultCurrentA)) * 0.966;
   const takagiCalculatedKm = Number(
-    Math.min(lineLengthKm, Math.max(0.2, faultVoltageV / (faultCurrentA * lineReactancePerKm * 12.5))).toFixed(2)
+    Math.min(lineLengthKm, Math.max(0.2, loopReactance / lineReactancePerKm)).toFixed(2)
   );
 
   const faultTowerEstimate = Math.min(10, Math.max(1, Math.round((takagiCalculatedKm / lineLengthKm) * 10)));

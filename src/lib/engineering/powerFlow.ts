@@ -269,13 +269,13 @@ export function solveNewtonRaphson(
               if (eqBus === varBus) {
                 J[r][cIdx] = calcP(eqBus) - vMag[eqBus] ** 2 * ybus[eqBus][eqBus].re;
               } else {
-                J[r][cIdx] = -vi * vj * (g * Math.sin(th) - bi * Math.cos(th));
+                J[r][cIdx] = -vi * vj * (g * Math.cos(th) + bi * Math.sin(th));
               }
             } else {
               if (eqBus === varBus) {
                 J[r][cIdx] = (calcQ(eqBus) - vMag[eqBus] ** 2 * ybus[eqBus][eqBus].im) / vMag[eqBus];
               } else {
-                J[r][cIdx] = vi * (g * Math.cos(th) + bi * Math.sin(th));
+                J[r][cIdx] = vi * (g * Math.sin(th) - bi * Math.cos(th));
               }
             }
           }

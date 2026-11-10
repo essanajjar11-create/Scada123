@@ -54,8 +54,9 @@ export const SolarPvMicrogridModule: React.FC = () => {
   // If voltage is low -> Inverter injects VARs
   let voltVarQMvar = 0;
   if (inverterMode === 'VOLT_VAR') {
-    // Dynamic Q injection based on bus voltage deviation
-    const vDev = (tr1State?.gridVoltage ?? 13.8) - 13.8;
+    // Dynamic Q injection based on 13.8kV bus voltage deviation (derived from primary grid voltage)
+    const v138Kv = ((tr1State?.gridVoltage ?? 132.0) / 132.0) * 13.8;
+    const vDev = v138Kv - 13.8;
     voltVarQMvar = -Number((vDev * 8.5).toFixed(2)); // reactive support
     voltVarQMvar = Math.max(-6.0, Math.min(6.0, voltVarQMvar));
   } else if (inverterMode === 'FIXED_PF') {

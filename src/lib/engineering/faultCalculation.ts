@@ -101,7 +101,7 @@ export interface ShortCircuitNetworkInput {
   unKv: number;
   /** Initial symmetrical short-circuit power of the upstream network Sk'' [MVA]. */
   gridSkMva: number;
-  /** Upstream network R/X ratio (typical HV: 8-15). */
+  /** Upstream network X/R ratio (typical HV: 8-15). */
   gridRxRatio?: number;
   /** Interposed transformer between grid and fault point (omit for busbar-fed directly). */
   transformer?: TransformerImpedanceInput;
