@@ -1,5 +1,6 @@
-import React, { useState, lazy, Suspense } from 'react';
+import React, { useState, lazy, Suspense, useEffect } from 'react';
 import { ScadaProvider, useScada } from './context/ScadaContext';
+import { realtimeSync } from './lib/realtimeSync';
 import { Header } from './components/common/Header';
 import { Navbar, TabId } from './components/common/Navbar';
 import { ScadaAuthPortal } from './components/common/ScadaAuthPortal';
@@ -77,6 +78,11 @@ const ScadaMainContent: React.FC = () => {
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [isWorkspaceInitialized, setIsWorkspaceInitialized] = useState<boolean>(false);
   const { outdoorTheme, isSoeModalOpen, setSoeModalOpen, t } = useScada();
+
+  useEffect(() => {
+    realtimeSync.setActiveScreen(activeTab);
+    realtimeSync.broadcastPresence(activeTab);
+  }, [activeTab]);
 
   return (
     <div className="relative min-h-screen">

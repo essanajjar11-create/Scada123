@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useScada } from '../../context/ScadaContext';
+import { realtimeSync } from '../../lib/realtimeSync';
 import {
   Activity,
   Volume2,
@@ -61,7 +62,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSearch }) => {
     return () => clearInterval(timer);
   }, []);
 
-  const totalConnected = Math.max(1, activeUsers.length);
+  const totalConnected = 1 + activeUsers.length;
 
   return (
     <>
@@ -273,8 +274,9 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSearch }) => {
                     <Monitor className="w-4 h-4 text-emerald-400" />
                     <span className="font-bold text-xs text-white uppercase font-mono">{t('active_workstations')}</span>
                   </div>
-                  <span className="px-2 py-0.5 bg-emerald-950 text-emerald-400 border border-emerald-800 text-[10px] font-mono rounded font-bold">
-                    {t('live_sync')}
+                  <span className="px-2 py-0.5 bg-emerald-950 text-emerald-400 border border-emerald-800 text-[10px] font-mono rounded font-bold flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <span>{realtimeSync.isWebSocketConnected() ? 'WS + P2P LIVE' : 'P2P MULTI-TAB'}</span>
                   </span>
                 </div>
 
@@ -307,6 +309,12 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSearch }) => {
                           <span className="uppercase text-cyan-400 font-bold">{u.userRole}</span>
                           <span>•</span>
                           <span>{u.workstationId}</span>
+                          {u.activeScreen && (
+                            <>
+                              <span>•</span>
+                              <span className="text-emerald-400 uppercase font-sans font-bold">[{u.activeScreen}]</span>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>

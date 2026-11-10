@@ -345,6 +345,10 @@ export const ScadaProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     realtimeSync.setIdentity(name, currentUserRole);
   }, [currentUserRole]);
 
+  useEffect(() => {
+    realtimeSync.setIdentity(currentUserName, currentUserRole);
+  }, [currentUserName, currentUserRole]);
+
   const dismissToast = useCallback((id: string) => {
     setRemoteToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
@@ -367,11 +371,13 @@ export const ScadaProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const isDeviceLocked = useCallback((trId: 'TR-1' | 'TR-2', switchKey: keyof SwitchgearState): LockedDevice | null => {
     const key = `${trId}:${switchKey}`;
     const lock = lockedDevices[key];
-    if (lock && lock.lockExpiry > Date.now() && lock.lockedBy !== currentUserName) {
-      return lock;
+    if (lock && lock.lockExpiry > Date.now()) {
+      if (lock.lockedByWorkstationId ? lock.lockedByWorkstationId !== myWorkstationId : lock.lockedBy !== currentUserName) {
+        return lock;
+      }
     }
     return null;
-  }, [lockedDevices, currentUserName]);
+  }, [lockedDevices, currentUserName, myWorkstationId]);
 
   const [thresholds, setThresholds] = useState<AlarmThresholds>({
     overVoltageKV: 142.0,
@@ -692,38 +698,50 @@ export const ScadaProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               workstationId: msg.senderWorkstationId,
               userName: msg.senderName,
               userRole: msg.senderRole,
-              lastActiveTimestamp: msg.timestamp,
+              lastActiveTimestamp: msg.timestamp || Date.now(),
+              activeScreen: msg.activeScreen,
             },
           ];
         });
       }
 
+      // 1b. User Disconnect Event
+      if (msg.type === 'USER_DISCONNECT') {
+        setActiveUsers((prev) => prev.filter((u) => u.workstationId !== msg.senderWorkstationId));
+      }
+
       // 2. Switch Operation Remote Event
-      if (msg.type === 'SWITCH_OPERATION' && msg.trId && msg.switchKey !== undefined && msg.newState !== undefined) {
+      if (msg.type === 'SWITCH_OPERATION' && msg.trId) {
         const trId = msg.trId;
         const switchKey = msg.switchKey;
         const newState = msg.newState;
+        const allSwitches = msg.allSwitches;
 
-        const updater = (prev: TransformerTelemetry) => ({
-          ...prev,
-          switches: {
-            ...prev.switches,
-            [switchKey]: newState,
-          },
-        });
+        if (trId === 'TR-1') {
+          const updatedSwitches = allSwitches || (switchKey !== undefined && newState !== undefined ? { ...tr1StateRef.current.switches, [switchKey]: newState } : tr1StateRef.current.switches);
+          tr1StateRef.current = {
+            ...tr1StateRef.current,
+            switches: updatedSwitches,
+          };
+          setTr1State(tr1StateRef.current);
+        } else {
+          const updatedSwitches = allSwitches || (switchKey !== undefined && newState !== undefined ? { ...tr2StateRef.current.switches, [switchKey]: newState } : tr2StateRef.current.switches);
+          tr2StateRef.current = {
+            ...tr2StateRef.current,
+            switches: updatedSwitches,
+          };
+          setTr2State(tr2StateRef.current);
+        }
 
-        if (trId === 'TR-1') setTr1State(updater);
-        else setTr2State(updater);
-
-        const stateLabel = newState ? 'CLOSED (ENERGIZED)' : 'OPEN (ISOLATED)';
-        const logMsg = `${msg.senderName} [${msg.senderRole.toUpperCase()}] Operated ${trId} ${switchKey} ➔ ${stateLabel}`;
+        const stateLabel = newState !== undefined ? (newState ? 'CLOSED (ENERGIZED)' : 'OPEN (ISOLATED)') : 'OPERATED';
+        const logMsg = `${msg.senderName} [${msg.senderRole.toUpperCase()}] Operated ${trId} ${switchKey || 'Switchgear'} ➔ ${stateLabel}`;
 
         addAuditLog('SWITCHING', logMsg, msg.senderName, msg.senderRole);
         addRemoteToast({
           operatorName: msg.senderName,
           operatorRole: msg.senderRole,
           actionTitle: `${trId} Remote Switch Control`,
-          actionDetails: `${switchKey} ➔ ${stateLabel}`,
+          actionDetails: `${switchKey || 'Switch'} ➔ ${stateLabel}`,
         });
       }
 
@@ -735,9 +753,29 @@ export const ScadaProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             deviceKey: msg.deviceKey!,
             lockedBy: msg.senderName,
             userRole: msg.senderRole,
+            lockedByWorkstationId: msg.senderWorkstationId,
             lockExpiry: msg.lockExpiry!,
           },
         }));
+      }
+
+      // 3b. State Request from newly joined workstation
+      if (msg.type === 'STATE_REQUEST') {
+        if (isSimLeaderRef.current) {
+          realtimeSync.broadcast({
+            type: 'FULL_STATE_SYNC',
+            snapshot: {
+              tr1Switches: tr1StateRef.current.switches,
+              tr2Switches: tr2StateRef.current.switches,
+              simMode,
+              manualValues,
+              thresholds,
+              maintenanceMode,
+              bessData: bessStateRef.current,
+              hvdcData: hvdcStateRef.current,
+            },
+          });
+        }
       }
 
       // 4. Fault Injection Remote Event
@@ -937,12 +975,26 @@ export const ScadaProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       // 9. Full State Snapshot Sync
       if (msg.type === 'FULL_STATE_SYNC' && msg.snapshot) {
         const snap = msg.snapshot;
-        if (snap.tr1Switches) setTr1State((prev) => ({ ...prev, switches: snap.tr1Switches }));
-        if (snap.tr2Switches) setTr2State((prev) => ({ ...prev, switches: snap.tr2Switches }));
+        if (snap.tr1Switches) {
+          tr1StateRef.current = { ...tr1StateRef.current, switches: snap.tr1Switches };
+          setTr1State(tr1StateRef.current);
+        }
+        if (snap.tr2Switches) {
+          tr2StateRef.current = { ...tr2StateRef.current, switches: snap.tr2Switches };
+          setTr2State(tr2StateRef.current);
+        }
         if (snap.simMode) setSimModeState(snap.simMode);
         if (snap.manualValues) setManualValuesState(snap.manualValues);
         if (snap.thresholds) setThresholds(snap.thresholds);
         if (snap.maintenanceMode !== undefined) setMaintenanceModeState(snap.maintenanceMode);
+        if (snap.bessData) {
+          bessStateRef.current = { ...bessStateRef.current, ...snap.bessData };
+          setBessState(bessStateRef.current);
+        }
+        if (snap.hvdcData) {
+          hvdcStateRef.current = { ...hvdcStateRef.current, ...snap.hvdcData };
+          setHvdcState(hvdcStateRef.current);
+        }
       }
 
       // 10. SOE Event Remote Sync
@@ -999,16 +1051,41 @@ export const ScadaProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       remoteTelemetryRef.current = cachedTelemetry;
       lastRemoteTelemetrySentAtRef.current = cachedTelemetry.sentAt;
       lastRemoteTelemetryAtRef.current = Date.now();
+      tr1StateRef.current = cachedTelemetry.tr1;
+      tr2StateRef.current = cachedTelemetry.tr2;
+      bessStateRef.current = cachedTelemetry.bess;
+      hvdcStateRef.current = cachedTelemetry.hvdc;
+      setTr1State(cachedTelemetry.tr1);
+      setTr2State(cachedTelemetry.tr2);
+      setBessState(cachedTelemetry.bess);
+      setHvdcState(cachedTelemetry.hvdc);
     }
     const cachedSnapshot = realtimeSync.getLastSnapshot();
     if (cachedSnapshot) {
-      if (cachedSnapshot.tr1Switches) setTr1State((prev) => ({ ...prev, switches: cachedSnapshot.tr1Switches }));
-      if (cachedSnapshot.tr2Switches) setTr2State((prev) => ({ ...prev, switches: cachedSnapshot.tr2Switches }));
+      if (cachedSnapshot.tr1Switches) {
+        tr1StateRef.current = { ...tr1StateRef.current, switches: cachedSnapshot.tr1Switches };
+        setTr1State(tr1StateRef.current);
+      }
+      if (cachedSnapshot.tr2Switches) {
+        tr2StateRef.current = { ...tr2StateRef.current, switches: cachedSnapshot.tr2Switches };
+        setTr2State(tr2StateRef.current);
+      }
       if (cachedSnapshot.simMode) setSimModeState(cachedSnapshot.simMode);
       if (cachedSnapshot.manualValues) setManualValuesState(cachedSnapshot.manualValues);
       if (cachedSnapshot.thresholds) setThresholds(cachedSnapshot.thresholds);
       if (cachedSnapshot.maintenanceMode !== undefined) setMaintenanceModeState(cachedSnapshot.maintenanceMode);
+      if (cachedSnapshot.bessData) {
+        bessStateRef.current = { ...bessStateRef.current, ...cachedSnapshot.bessData };
+        setBessState(bessStateRef.current);
+      }
+      if (cachedSnapshot.hvdcData) {
+        hvdcStateRef.current = { ...hvdcStateRef.current, ...cachedSnapshot.hvdcData };
+        setHvdcState(hvdcStateRef.current);
+      }
     }
+
+    // Request active session state from peer leader
+    realtimeSync.broadcast({ type: 'STATE_REQUEST' });
   }, []);
 
   // Periodic Presence Heartbeat and Device Lock Cleanup
@@ -1443,8 +1520,15 @@ export const ScadaProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       };
     };
 
-    if (trId === 'TR-1') setTr1State(updater);
-    else setTr2State(updater);
+    const targetState = trId === 'TR-1' ? tr1StateRef.current : tr2StateRef.current;
+    const nextState = updater(targetState);
+    if (trId === 'TR-1') {
+      tr1StateRef.current = nextState;
+      setTr1State(nextState);
+    } else {
+      tr2StateRef.current = nextState;
+      setTr2State(nextState);
+    }
 
     // Lock device for 4000ms
     const deviceKey = `${trId}:${switchKey}`;
@@ -1455,6 +1539,7 @@ export const ScadaProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         deviceKey,
         lockedBy: currentUserName,
         userRole: currentUserRole,
+        lockedByWorkstationId: myWorkstationId,
         lockExpiry,
       },
     }));
@@ -1464,6 +1549,7 @@ export const ScadaProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       trId,
       switchKey,
       newState: targetVal,
+      allSwitches: nextState.switches,
     });
     realtimeSync.broadcast({
       type: 'DEVICE_LOCK',
@@ -2007,6 +2093,8 @@ export const ScadaProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           manualValues,
           thresholds,
           maintenanceMode,
+          bessData: bessStateRef.current,
+          hvdcData: hvdcStateRef.current,
         },
       });
     };
@@ -2014,7 +2102,9 @@ export const ScadaProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (msg.type !== 'PRESENCE_HEARTBEAT') return;
       if (!knownPeersRef.current.has(msg.senderWorkstationId)) {
         knownPeersRef.current.add(msg.senderWorkstationId);
-        sendSnapshot();
+        if (isSimLeaderRef.current) {
+          sendSnapshot();
+        }
       }
     });
     const seedTimer = setTimeout(sendSnapshot, 1500);

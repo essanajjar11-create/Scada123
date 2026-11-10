@@ -44,13 +44,58 @@ async function startServer() {
       telemetry: cachedTelemetry
     }));
 
+    // Broadcast updated client count to other clients
+    const joinNotice = JSON.stringify({
+      type: "CLIENT_COUNT",
+      clientCount: clients.size,
+    });
+    for (const client of clients) {
+      if (client !== ws && client.readyState === WebSocket.OPEN) {
+        client.send(joinNotice);
+      }
+    }
+
     ws.on("message", (data) => {
       try {
         const messageStr = data.toString();
         const payload = JSON.parse(messageStr);
 
         if (payload.type === "FULL_STATE_SYNC" && payload.snapshot) {
-          cachedSnapshot = payload.snapshot;
+          cachedSnapshot = { ...(cachedSnapshot || {}), ...payload.snapshot };
+        }
+
+        if (payload.type === "SWITCH_OPERATION" && payload.trId) {
+          if (!cachedSnapshot) cachedSnapshot = {};
+          if (payload.allSwitches) {
+            if (payload.trId === "TR-1") cachedSnapshot.tr1Switches = payload.allSwitches;
+            if (payload.trId === "TR-2") cachedSnapshot.tr2Switches = payload.allSwitches;
+          } else if (payload.switchKey !== undefined && payload.newState !== undefined) {
+            const swKey = payload.trId === "TR-1" ? "tr1Switches" : "tr2Switches";
+            if (!cachedSnapshot[swKey]) cachedSnapshot[swKey] = {};
+            cachedSnapshot[swKey][payload.switchKey] = payload.newState;
+          }
+        }
+
+        if (payload.type === "MAINTENANCE_TOGGLE" && payload.maintenanceMode !== undefined) {
+          if (!cachedSnapshot) cachedSnapshot = {};
+          cachedSnapshot.maintenanceMode = payload.maintenanceMode;
+        }
+
+        if (payload.type === "SETTINGS_UPDATE") {
+          if (!cachedSnapshot) cachedSnapshot = {};
+          if (payload.simMode) cachedSnapshot.simMode = payload.simMode;
+          if (payload.manualValues) cachedSnapshot.manualValues = { ...(cachedSnapshot.manualValues || {}), ...payload.manualValues };
+          if (payload.thresholds) cachedSnapshot.thresholds = { ...(cachedSnapshot.thresholds || {}), ...payload.thresholds };
+        }
+
+        if (payload.type === "BESS_UPDATE" && payload.bessData) {
+          if (!cachedSnapshot) cachedSnapshot = {};
+          cachedSnapshot.bessData = { ...(cachedSnapshot.bessData || {}), ...payload.bessData };
+        }
+
+        if ((payload.type === "HVDC_UPDATE" || payload.type === "HVDC_SETPOINT") && payload.hvdcData) {
+          if (!cachedSnapshot) cachedSnapshot = {};
+          cachedSnapshot.hvdcData = { ...(cachedSnapshot.hvdcData || {}), ...payload.hvdcData };
         }
 
         if (payload.type === "TELEMETRY_SYNC" && payload.telemetry) {
@@ -73,6 +118,15 @@ async function startServer() {
 
     ws.on("close", () => {
       clients.delete(ws);
+      const leaveNotice = JSON.stringify({
+        type: "CLIENT_COUNT",
+        clientCount: clients.size,
+      });
+      for (const client of clients) {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(leaveNotice);
+        }
+      }
     });
 
     ws.on("error", (err) => {

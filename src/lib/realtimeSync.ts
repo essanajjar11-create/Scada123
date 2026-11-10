@@ -30,6 +30,9 @@ export type SyncMessageType =
   | 'ALARM_ACK'
   | 'SETTINGS_UPDATE'
   | 'FULL_STATE_SYNC'
+  | 'STATE_REQUEST'
+  | 'USER_DISCONNECT'
+  | 'CLIENT_COUNT'
   | 'FAN_TOGGLE'
   | 'SOE_EVENT'
   | 'AHI_UPDATE'
@@ -50,9 +53,12 @@ export interface SyncMessagePayload {
   trId?: 'TR-1' | 'TR-2';
   switchKey?: keyof SwitchgearState;
   newState?: boolean;
+  allSwitches?: SwitchgearState;
   
   deviceKey?: string;
   lockExpiry?: number;
+  activeScreen?: string;
+  clientCount?: number;
 
   faultType?: 'SLG' | 'OVER_TEMP' | 'BUCHHOLZ' | 'OPEN_CT' | 'CLEAR';
   maintenanceMode?: boolean;
@@ -97,13 +103,14 @@ class RealtimeSyncManager {
   private workstationId: string;
   private userName: string = 'Grid Operator';
   private userRole: UserRole = 'operator';
+  private activeScreen: string = 'overview';
+  private isConnected: boolean = false;
 
   private broadcastChannel: BroadcastChannel | null = null;
   private socket: WebSocket | null = null;
   private messageListeners: Set<MessageHandler> = new Set();
   private reconnectTimer: any = null;
   private reconnectAttempts: number = 0;
-  private maxReconnectAttempts: number = 5;
 
   // Deduplication tracking
   private processedMessageIds: Set<string> = new Set();
@@ -118,18 +125,26 @@ class RealtimeSyncManager {
     // Generate or retrieve persistent workstation ID. The random suffix keeps
     // colliding IDs (which would make two clients ignore each other and split
     // into two authoritative telemetry sources) practically impossible.
-    const storedId = sessionStorage.getItem('scada_ws_id');
+    const storedId = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('scada_ws_id') : null;
     if (storedId) {
       this.workstationId = storedId;
     } else {
       const randNum = Math.floor(1000 + Math.random() * 9000);
       const suffix = Math.random().toString(36).slice(2, 5).toUpperCase();
       this.workstationId = `WS-${randNum}-${suffix}`;
-      sessionStorage.setItem('scada_ws_id', this.workstationId);
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.setItem('scada_ws_id', this.workstationId);
+      }
     }
 
     this.initBroadcastChannel();
     this.initWebSocket();
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('beforeunload', () => {
+        this.broadcastDisconnect();
+      });
+    }
   }
 
   /** Latest authoritative telemetry frame seen from the simulation leader. */
@@ -148,6 +163,14 @@ class RealtimeSyncManager {
     this.broadcastPresence();
   }
 
+  public setActiveScreen(screen: string) {
+    this.activeScreen = screen;
+  }
+
+  public getActiveScreen(): string {
+    return this.activeScreen;
+  }
+
   public getWorkstationId(): string {
     return this.workstationId;
   }
@@ -158,6 +181,10 @@ class RealtimeSyncManager {
 
   public getUserRole(): UserRole {
     return this.userRole;
+  }
+
+  public isWebSocketConnected(): boolean {
+    return this.isConnected && this.socket !== null && this.socket.readyState === WebSocket.OPEN;
   }
 
   private handleIncomingMessage(data: SyncMessagePayload) {
@@ -193,35 +220,50 @@ class RealtimeSyncManager {
   }
 
   private initBroadcastChannel() {
-    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
-      try {
-        this.broadcastChannel = new BroadcastChannel('scada_multi_user_sync');
-        this.broadcastChannel.onmessage = (event) => {
-          if (event.data) {
-            this.handleIncomingMessage(event.data);
-          }
-        };
-      } catch (e) {
-        // BroadcastChannel optional fallback
+    if (typeof window !== 'undefined') {
+      if ('BroadcastChannel' in window) {
+        try {
+          this.broadcastChannel = new BroadcastChannel('scada_multi_user_sync');
+          this.broadcastChannel.onmessage = (event) => {
+            if (event.data) {
+              this.handleIncomingMessage(event.data);
+            }
+          };
+        } catch (e) {
+          // BroadcastChannel optional fallback
+        }
       }
+
+      // Storage event fallback for cross-tab sync in restricted environments
+      window.addEventListener('storage', (event) => {
+        if (event.key === 'scada_broadcast_storage_sync' && event.newValue) {
+          try {
+            const data: SyncMessagePayload = JSON.parse(event.newValue);
+            this.handleIncomingMessage(data);
+          } catch {}
+        }
+      });
     }
   }
 
   private initWebSocket() {
     if (typeof window === 'undefined') return;
-    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      // Standalone mode: rely on BroadcastChannel for multi-tab sync
-      return;
-    }
 
     try {
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${protocol}//${window.location.host}/ws`;
+      let wsUrl: string;
+      const customWsUrl = localStorage.getItem('scada_ws_url');
+      if (customWsUrl) {
+        wsUrl = customWsUrl;
+      } else {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        wsUrl = `${protocol}//${window.location.host}/ws`;
+      }
 
       this.socket = new WebSocket(wsUrl);
 
       this.socket.onopen = () => {
         this.reconnectAttempts = 0;
+        this.isConnected = true;
         this.broadcastPresence();
       };
 
@@ -237,10 +279,12 @@ class RealtimeSyncManager {
       };
 
       this.socket.onclose = () => {
+        this.isConnected = false;
         this.scheduleReconnect();
       };
 
       this.socket.onerror = () => {
+        this.isConnected = false;
         if (this.socket) {
           try {
             this.socket.close();
@@ -248,6 +292,7 @@ class RealtimeSyncManager {
         }
       };
     } catch (e) {
+      this.isConnected = false;
       this.scheduleReconnect();
     }
   }
@@ -255,10 +300,8 @@ class RealtimeSyncManager {
   private scheduleReconnect() {
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
     this.reconnectAttempts++;
-    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      return;
-    }
-    const delay = Math.min(30000, 2000 * Math.pow(1.8, this.reconnectAttempts));
+    // Self-healing: keep retrying periodically with capped backoff
+    const delay = Math.min(10000, 1500 * Math.pow(1.5, Math.min(this.reconnectAttempts, 6)));
     this.reconnectTimer = setTimeout(() => {
       this.initWebSocket();
     }, delay);
@@ -301,13 +344,20 @@ class RealtimeSyncManager {
       timestamp: Date.now(),
     };
 
-    // Broadcast locally to other tabs
+    // Broadcast locally to other tabs via BroadcastChannel
     if (this.broadcastChannel) {
       try {
         this.broadcastChannel.postMessage(fullPayload);
       } catch (e) {
         console.warn('BroadcastChannel postMessage error:', e);
       }
+    }
+
+    // Secondary local storage pulse for cross-tab compatibility
+    if (typeof localStorage !== 'undefined' && fullPayload.type !== 'TELEMETRY_SYNC') {
+      try {
+        localStorage.setItem('scada_broadcast_storage_sync', JSON.stringify(fullPayload));
+      } catch {}
     }
 
     // Broadcast remotely via WebSocket server
@@ -320,9 +370,17 @@ class RealtimeSyncManager {
     }
   }
 
-  public broadcastPresence() {
+  public broadcastPresence(screen?: string) {
+    if (screen) this.activeScreen = screen;
     this.broadcast({
       type: 'PRESENCE_HEARTBEAT',
+      activeScreen: this.activeScreen,
+    });
+  }
+
+  public broadcastDisconnect() {
+    this.broadcast({
+      type: 'USER_DISCONNECT',
     });
   }
 }

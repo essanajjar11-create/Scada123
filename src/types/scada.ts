@@ -205,6 +205,7 @@ export interface ActiveUserPresence {
   userRole: UserRole;
   lastActiveTimestamp: number;
   isSelf?: boolean;
+  activeScreen?: string;
 }
 
 export interface LockedDevice {
@@ -212,6 +213,7 @@ export interface LockedDevice {
   lockedBy: string;  // e.g. "Eng. Essa Najjar"
   userRole: UserRole;
   lockExpiry: number; // timestamp ms
+  lockedByWorkstationId?: string;
 }
 
 export interface RemoteToastNotification {
