@@ -3,9 +3,24 @@
  * WebSockets + BroadcastChannel Dual Transport with Lockout & Presence Management
  */
 
-import { UserRole, SwitchgearState, SOEEvent, AssetHealthDetails, OTSScenarioId, OTSReport, BessState, HvdcTelemetry } from '../types/scada';
+import { UserRole, SwitchgearState, SOEEvent, AssetHealthDetails, OTSScenarioId, OTSReport, BessState, HvdcTelemetry, TransformerTelemetry } from '../types/scada';
+
+/**
+ * Authoritative live-telemetry frame. Exactly one workstation (the elected
+ * simulation leader) produces these; every other client mirrors them so the
+ * analog readings (A, kV, °C, MW ...) are identical on all screens.
+ */
+export interface TelemetrySyncSnapshot {
+  tr1: TransformerTelemetry;
+  tr2: TransformerTelemetry;
+  bess: BessState;
+  hvdc: HvdcTelemetry;
+  sentAt: number;
+}
 
 export type SyncMessageType =
+  | 'CONNECTED'
+  | 'TELEMETRY_SYNC'
   | 'PRESENCE_HEARTBEAT'
   | 'SWITCH_OPERATION'
   | 'DEVICE_LOCK'
@@ -71,6 +86,9 @@ export interface SyncMessagePayload {
 
   // Full state snapshot sync
   snapshot?: any;
+
+  // Authoritative simulation telemetry
+  telemetry?: TelemetrySyncSnapshot;
 }
 
 type MessageHandler = (msg: SyncMessagePayload) => void;
@@ -91,19 +109,37 @@ class RealtimeSyncManager {
   private processedMessageIds: Set<string> = new Set();
   private messageIdQueue: string[] = [];
 
+  // Last state pushed by the server right after (re)connecting. Retained so a
+  // late-mounting React tree can still seed itself instead of waiting a tick.
+  private lastTelemetry: TelemetrySyncSnapshot | null = null;
+  private lastSnapshot: any = null;
+
   constructor() {
-    // Generate or retrieve persistent workstation ID
+    // Generate or retrieve persistent workstation ID. The random suffix keeps
+    // colliding IDs (which would make two clients ignore each other and split
+    // into two authoritative telemetry sources) practically impossible.
     const storedId = sessionStorage.getItem('scada_ws_id');
     if (storedId) {
       this.workstationId = storedId;
     } else {
       const randNum = Math.floor(1000 + Math.random() * 9000);
-      this.workstationId = `WS-${randNum}`;
+      const suffix = Math.random().toString(36).slice(2, 5).toUpperCase();
+      this.workstationId = `WS-${randNum}-${suffix}`;
       sessionStorage.setItem('scada_ws_id', this.workstationId);
     }
 
     this.initBroadcastChannel();
     this.initWebSocket();
+  }
+
+  /** Latest authoritative telemetry frame seen from the simulation leader. */
+  public getLastTelemetry(): TelemetrySyncSnapshot | null {
+    return this.lastTelemetry;
+  }
+
+  /** Latest cached control snapshot pushed by the server on connect. */
+  public getLastSnapshot(): any {
+    return this.lastSnapshot;
   }
 
   public setIdentity(name: string, role: UserRole) {
@@ -125,7 +161,21 @@ class RealtimeSyncManager {
   }
 
   private handleIncomingMessage(data: SyncMessagePayload) {
-    if (!data || data.senderWorkstationId === this.workstationId) return;
+    if (!data) return;
+
+    // Server greeting carries the cached control snapshot and telemetry frame.
+    if (data.type === 'CONNECTED') {
+      if (data.snapshot) this.lastSnapshot = data.snapshot;
+      if (data.telemetry) this.lastTelemetry = data.telemetry;
+      this.notifyListeners(data);
+      return;
+    }
+
+    if (data.type === 'TELEMETRY_SYNC' && data.telemetry) {
+      this.lastTelemetry = data.telemetry;
+    }
+
+    if (data.senderWorkstationId === this.workstationId) return;
 
     if (data.msgId) {
       if (this.processedMessageIds.has(data.msgId)) {

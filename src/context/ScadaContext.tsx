@@ -29,7 +29,7 @@ import {
   HvdcFaultType
 } from '../types/scada';
 import { Language, translations } from '../i18n/translations';
-import { realtimeSync, SyncMessagePayload } from '../lib/realtimeSync';
+import { realtimeSync, SyncMessagePayload, TelemetrySyncSnapshot } from '../lib/realtimeSync';
 import { soundEngine } from '../lib/soundEngine';
 import { raiseAlarm, evaluateTelemetryAlarms } from '../lib/engineering/alarmEngine';
 import { useShallowMemo } from '../lib/useShallowMemo';
@@ -317,6 +317,29 @@ export const ScadaProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [lockedDevices, setLockedDevices] = useState<Record<string, LockedDevice>>({});
   const [remoteToasts, setRemoteToasts] = useState<RemoteToastNotification[]>([]);
 
+  // ---------------------------------------------------------------------
+  // Authoritative telemetry ownership for multi-user sync.
+  // Previously every workstation ran its own randomized simulation, so the
+  // TR-1/TR-2 analog readings (A, kV, °C, kW, energies ...) drifted apart on
+  // each screen. Now exactly one workstation (lowest ID among live peers) owns
+  // the simulation and streams its frames; all other clients mirror them.
+  // ---------------------------------------------------------------------
+  const REMOTE_TELEMETRY_STALE_MS = 4000;
+  const myWorkstationId = realtimeSync.getWorkstationId();
+  const telemetryLeaderId = [myWorkstationId, ...activeUsers.map((u) => u.workstationId)].sort()[0];
+  const isSimLeader = telemetryLeaderId === myWorkstationId;
+
+  const remoteTelemetryRef = useRef<TelemetrySyncSnapshot | null>(null);
+  const lastRemoteTelemetryAtRef = useRef<number>(0);
+  const lastRemoteTelemetrySentAtRef = useRef<number>(0);
+  const isSimLeaderRef = useRef<boolean>(isSimLeader);
+  const telemetryLeaderIdRef = useRef<string>(telemetryLeaderId);
+
+  useEffect(() => {
+    isSimLeaderRef.current = isSimLeader;
+    telemetryLeaderIdRef.current = telemetryLeaderId;
+  }, [isSimLeader, telemetryLeaderId]);
+
   const setCurrentUserName = useCallback((name: string) => {
     setCurrentUserNameState(name);
     realtimeSync.setIdentity(name, currentUserRole);
@@ -560,6 +583,19 @@ export const ScadaProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     dccbTripped: false,
     converterBlocked: false,
   });
+
+  // Refs keep the latest BESS/HVDC frames available to the telemetry broadcaster
+  // without waiting for React to re-render.
+  const bessStateRef = useRef<BessState>(bessState);
+  const hvdcStateRef = useRef<HvdcTelemetry>(hvdcState);
+
+  useEffect(() => {
+    bessStateRef.current = bessState;
+  }, [bessState]);
+
+  useEffect(() => {
+    hvdcStateRef.current = hvdcState;
+  }, [hvdcState]);
 
   const [alarms, setAlarms] = useState<AlarmItem[]>([
     {
@@ -826,6 +862,24 @@ export const ScadaProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         addAuditLog('SETTINGS', `SCADA Settings/Simulation parameters adjusted remotely by ${msg.senderName}`, msg.senderName, msg.senderRole);
       }
 
+      // 9a. Authoritative live telemetry frame from the elected simulation leader
+      if (msg.type === 'TELEMETRY_SYNC' && msg.telemetry) {
+        // The elected leader is authoritative and never follows anyone else.
+        if (!isSimLeaderRef.current) {
+          const fromElectedLeader = msg.senderWorkstationId === telemetryLeaderIdRef.current;
+          // If the elected leader went silent (tab closed), accept any peer's
+          // frame so remaining workstations still converge while re-electing.
+          const leaderSilent =
+            Date.now() - lastRemoteTelemetryAtRef.current >= REMOTE_TELEMETRY_STALE_MS;
+          if (fromElectedLeader || leaderSilent) {
+            lastRemoteTelemetrySentAtRef.current = msg.telemetry.sentAt;
+            remoteTelemetryRef.current = msg.telemetry;
+            lastRemoteTelemetryAtRef.current = Date.now();
+          }
+        }
+        return;
+      }
+
       // 9. Full State Snapshot Sync
       if (msg.type === 'FULL_STATE_SYNC' && msg.snapshot) {
         const snap = msg.snapshot;
@@ -882,6 +936,26 @@ export const ScadaProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       unsubscribe();
     };
   }, [addAuditLog, addRemoteToast]);
+
+  // Seed from the frame/snapshot the server caches and replays on connect, so a
+  // newly opened or reloaded workstation converges immediately.
+  useEffect(() => {
+    const cachedTelemetry = realtimeSync.getLastTelemetry();
+    if (cachedTelemetry) {
+      remoteTelemetryRef.current = cachedTelemetry;
+      lastRemoteTelemetrySentAtRef.current = cachedTelemetry.sentAt;
+      lastRemoteTelemetryAtRef.current = Date.now();
+    }
+    const cachedSnapshot = realtimeSync.getLastSnapshot();
+    if (cachedSnapshot) {
+      if (cachedSnapshot.tr1Switches) setTr1State((prev) => ({ ...prev, switches: cachedSnapshot.tr1Switches }));
+      if (cachedSnapshot.tr2Switches) setTr2State((prev) => ({ ...prev, switches: cachedSnapshot.tr2Switches }));
+      if (cachedSnapshot.simMode) setSimModeState(cachedSnapshot.simMode);
+      if (cachedSnapshot.manualValues) setManualValuesState(cachedSnapshot.manualValues);
+      if (cachedSnapshot.thresholds) setThresholds(cachedSnapshot.thresholds);
+      if (cachedSnapshot.maintenanceMode !== undefined) setMaintenanceModeState(cachedSnapshot.maintenanceMode);
+    }
+  }, []);
 
   // Periodic Presence Heartbeat and Device Lock Cleanup
   useEffect(() => {
@@ -1551,6 +1625,57 @@ export const ScadaProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Main Simulation Loop
   useEffect(() => {
     const timer = setInterval(() => {
+      const remoteFrame = remoteTelemetryRef.current;
+      const remoteIsFresh =
+        remoteFrame !== null && Date.now() - lastRemoteTelemetryAtRef.current < REMOTE_TELEMETRY_STALE_MS;
+      // Leader ticks simulate and publish; followers mirror the frame. If the
+      // leader goes silent (closed tab / lost link) a follower temporarily takes
+      // over so the readings keep moving and the rest re-converge on it.
+      const simulateLocally = isSimLeaderRef.current || !remoteIsFresh;
+
+      if (!simulateLocally && remoteFrame) {
+        tr1StateRef.current = remoteFrame.tr1;
+        tr2StateRef.current = remoteFrame.tr2;
+        bessStateRef.current = remoteFrame.bess;
+        hvdcStateRef.current = remoteFrame.hvdc;
+        setTr1State(remoteFrame.tr1);
+        setTr2State(remoteFrame.tr2);
+        setBessState(remoteFrame.bess);
+        setHvdcState(remoteFrame.hvdc);
+
+        // Keep alarm evaluation and trend history consistent with the leader.
+        for (const trTelemetry of [remoteFrame.tr1, remoteFrame.tr2]) {
+          for (const finding of evaluateTelemetryAlarms(
+            {
+              asset: trTelemetry.id,
+              gridVoltageKV: trTelemetry.gridVoltage,
+              loadCurrentA: trTelemetry.loadCurrent,
+              oilTempC: trTelemetry.oilTemp,
+              windingTempC: trTelemetry.windingTemp,
+            },
+            thresholds
+          )) {
+            triggerAlarm(trTelemetry.id, finding.device, finding.message, finding.severity);
+          }
+        }
+
+        const followed = activeTrRef.current === 'TR-1' ? remoteFrame.tr1 : remoteFrame.tr2;
+        setHistory((prevHist) => [
+          ...prevHist.slice(-200),
+          {
+            time: new Date().toLocaleTimeString(),
+            timestamp: Date.now(),
+            voltage: followed.gridVoltage,
+            current: followed.loadCurrent,
+            activePower: followed.activePower / 1000,
+            oilTemp: followed.oilTemp,
+            windingTemp: followed.windingTemp,
+            thd: followed.thd,
+          },
+        ]);
+        return;
+      }
+
       const updateTelemetry = (prev: TransformerTelemetry): TransformerTelemetry => {
         let current = prev.loadCurrent;
         let gridV = prev.gridVoltage;
@@ -1684,6 +1809,10 @@ export const ScadaProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       // Live BESS Automatic Dispatch & SOC Evolution
       setBessState((prevBess) => {
+        const commitBess = (nextBess: BessState): BessState => {
+          bessStateRef.current = nextBess;
+          return nextBess;
+        };
         const totalSubstationMW = (tr1StateRef.current.activePower + tr2StateRef.current.activePower) / 1000.0;
         let pMW = prevBess.powerMW;
         let status = prevBess.statusText;
@@ -1705,16 +1834,20 @@ export const ScadaProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const deltaMWhPct = (pMW / 40.0) * (scanRateMs / 3600000) * 100.0 * (pMW >= 0 ? 0.95 : 1.05);
         const newSoc = Math.max(5.0, Math.min(98.0, prevBess.socPct + deltaMWhPct));
 
-        return {
+        return commitBess({
           ...prevBess,
           powerMW: Number(pMW.toFixed(1)),
           socPct: Number(newSoc.toFixed(2)),
           statusText: status,
-        };
+        });
       });
 
       // Live VSC-HVDC Transmission Bay & Intertie Link Dynamics (IEC 62501 / CIGRE B4)
       setHvdcState((prevHvdc) => {
+        const commitHvdc = (nextHvdc: HvdcTelemetry): HvdcTelemetry => {
+          hvdcStateRef.current = nextHvdc;
+          return nextHvdc;
+        };
         const sw = tr1StateRef.current.switches;
         const isAcConnected = sw.hvBreaker52_HVDC && (sw.hvDisconnect89_HVDC_A || sw.hvDisconnect89_HVDC_B);
         const isDcConnected = sw.dccbPositive52_DC1 && sw.dccbNegative52_DC2 && !sw.dcEarth89_DCE1 && !sw.dcEarth89_DCE2;
@@ -1754,7 +1887,7 @@ export const ScadaProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const appMva = Math.sqrt(liveP * liveP + liveQ * liveQ);
         const pf = appMva > 0 ? Math.abs(liveP) / appMva : 1.0;
 
-        return {
+        return commitHvdc({
           ...prevHvdc,
           activePowerMW: Number(liveP.toFixed(1)),
           reactivePowerMVAR: Number(liveQ.toFixed(1)),
@@ -1771,8 +1904,23 @@ export const ScadaProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           coolantTempC: Number(nextCoolantT.toFixed(1)),
           lossMW: Number(totalLossMw.toFixed(2)),
           efficiencyPct: liveP !== 0 ? Math.max(90.0, Math.min(99.4, 100 - (totalLossMw / Math.abs(liveP)) * 100)) : 99.1
-        };
+        });
       });
+
+      // The authoritative workstation publishes this tick's frame so every
+      // other workstation (other tabs, other machines) shows the same numbers.
+      if (simulateLocally) {
+        realtimeSync.broadcast({
+          type: 'TELEMETRY_SYNC',
+          telemetry: {
+            tr1: tr1StateRef.current,
+            tr2: tr2StateRef.current,
+            bess: bessStateRef.current,
+            hvdc: hvdcStateRef.current,
+            sentAt: Date.now(),
+          },
+        });
+      }
     }, scanRateMs);
 
     return () => clearInterval(timer);

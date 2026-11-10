@@ -29,15 +29,19 @@ async function startServer() {
 
   const clients = new Set<WebSocket>();
   let cachedSnapshot: any = null;
+  let cachedTelemetry: any = null;
 
   wss.on("connection", (ws) => {
     clients.add(ws);
 
-    // Send connection welcome and cached state snapshot if available
+    // Send connection welcome plus the cached control snapshot and the last
+    // authoritative telemetry frame so a late-joining workstation starts in
+    // sync instead of waiting for the next leader tick.
     ws.send(JSON.stringify({
       type: "CONNECTED",
       clientCount: clients.size,
-      snapshot: cachedSnapshot
+      snapshot: cachedSnapshot,
+      telemetry: cachedTelemetry
     }));
 
     ws.on("message", (data) => {
@@ -47,6 +51,13 @@ async function startServer() {
 
         if (payload.type === "FULL_STATE_SYNC" && payload.snapshot) {
           cachedSnapshot = payload.snapshot;
+        }
+
+        if (payload.type === "TELEMETRY_SYNC" && payload.telemetry) {
+          // Latest frame wins (frames carry a wall-clock sentAt from the leader).
+          if (!cachedTelemetry || (payload.telemetry.sentAt ?? 0) >= (cachedTelemetry.sentAt ?? 0)) {
+            cachedTelemetry = payload.telemetry;
+          }
         }
 
         // Broadcast to all other connected clients
