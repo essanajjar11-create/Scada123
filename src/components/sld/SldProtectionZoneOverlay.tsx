@@ -75,7 +75,7 @@ const SldProtectionZoneOverlayImpl: React.FC<SldProtectionZoneOverlayProps> = ({
         }
       >
         <polygon
-          points="215,65 300,65 300,400 215,400"
+          points="260,160 380,160 380,395 260,395"
           fill="#8b5cf6"
           fillOpacity="0.10"
           stroke="#8b5cf6"
@@ -83,8 +83,8 @@ const SldProtectionZoneOverlayImpl: React.FC<SldProtectionZoneOverlayProps> = ({
           strokeDasharray="6 4"
           className="transition-all group-hover:fill-opacity-18 group-hover:stroke-width-2.5"
         />
-        <rect x="220" y="145" width="165" height="16" rx="4" fill="#2e1065" stroke="#7c3aed" strokeWidth="1" />
-        <text x="226" y="157" fill="#ddd6fe" fontSize="8.5" fontWeight="extrabold">
+        <rect x="265" y="145" width="165" height="16" rx="4" fill="#2e1065" stroke="#7c3aed" strokeWidth="1" />
+        <text x="271" y="157" fill="#ddd6fe" fontSize="8.5" fontWeight="extrabold">
           🛡️ ANSI 87T TR-1 DIFF ZONE
         </text>
       </g>
@@ -106,7 +106,7 @@ const SldProtectionZoneOverlayImpl: React.FC<SldProtectionZoneOverlayProps> = ({
         }
       >
         <polygon
-          points="705,65 790,65 790,400 705,400"
+          points="620,160 740,160 740,395 620,395"
           fill="#8b5cf6"
           fillOpacity="0.10"
           stroke="#8b5cf6"
@@ -114,8 +114,8 @@ const SldProtectionZoneOverlayImpl: React.FC<SldProtectionZoneOverlayProps> = ({
           strokeDasharray="6 4"
           className="transition-all group-hover:fill-opacity-18 group-hover:stroke-width-2.5"
         />
-        <rect x="710" y="145" width="165" height="16" rx="4" fill="#2e1065" stroke="#7c3aed" strokeWidth="1" />
-        <text x="716" y="157" fill="#ddd6fe" fontSize="8.5" fontWeight="extrabold">
+        <rect x="625" y="145" width="165" height="16" rx="4" fill="#2e1065" stroke="#7c3aed" strokeWidth="1" />
+        <text x="631" y="157" fill="#ddd6fe" fontSize="8.5" fontWeight="extrabold">
           🛡️ ANSI 87T TR-2 DIFF ZONE
         </text>
       </g>

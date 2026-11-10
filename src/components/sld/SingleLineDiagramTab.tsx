@@ -127,8 +127,9 @@ export const SingleLineDiagramTab: React.FC = () => {
   const [hvdcDiagModalOpen, setHvdcDiagModalOpen] = useState(false);
 
   // Canvas Viewport & Zoom Controls State
-  // Add a stateful zoom value for UI components that need re‑render on zoom change
+  // Add a stateful zoom and pan value for UI components that need re‑render on zoom/pan change
   const [zoomState, setZoomState] = React.useState<number>(1.0);
+  const [panState, setPanState] = React.useState<{ x: number; y: number }>({ x: 0, y: 0 });
 // ==== Performance‑optimized pan/zoom state ====
 // Use refs to avoid React re‑renders on every mouse move.
 const zoomRef = React.useRef<number>(1.0);
@@ -143,6 +144,8 @@ const applyCanvasTransform = () => {
     const { x, y } = panRef.current;
     const scale = zoomRef.current;
     svgRef.current.setAttribute('transform', `translate(${x},${y}) scale(${scale})`);
+    svgRef.current.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
+    svgRef.current.style.transformOrigin = 'center center';
   }
 };
 
@@ -164,6 +167,7 @@ const scheduleTransform = () => {
   };
 const setPan = (v: { x: number; y: number }) => {
   panRef.current = v;
+  setPanState(v);
   scheduleTransform();
 };
 const setIsCanvasDragging = (v: boolean) => {
@@ -178,8 +182,8 @@ const setPanStart = (v: { x: number; y: number }) => {
 // ==== End of performance‑optimized state ====
 
 // Expose current zoom and pan values for components that expect them as plain numbers/objects
-const zoom = zoomRef.current;
-const pan = panRef.current;
+const zoom = zoomState;
+const pan = panState;
 
   const [inspectorTab, setInspectorTab] = useState<'control' | 'telemetry' | 'protection' | 'logs'>('control');
 
@@ -401,7 +405,7 @@ const pan = panRef.current;
 
   const handleSelectEquipment = (eq: EquipmentTarget) => {
     setSpotlightTarget(eq);
-    const targetPanX = 500 - eq.x;
+    const targetPanX = 600 - eq.x;
     const targetPanY = 325 - eq.y;
     setPan({ x: Math.round(targetPanX), y: Math.round(targetPanY) });
     setZoom(1.4);
@@ -567,12 +571,24 @@ const pan = panRef.current;
   const totalLoadMW = ((tr1State.activePower + tr2State.activePower) / 1000).toFixed(1);
   const totalLoadMVAR = ((tr1State.reactivePower + tr2State.reactivePower) / 1000).toFixed(1);
 
-  // Check state of currently selected switch or busbar
+  // Check state of currently selected switch, busbar, or transformer
   const isSelectedClosed = selectedItem.switchKey && selectedItem.trId
     ? (selectedItem.trId === 'TR-2' ? sw2[selectedItem.switchKey] : sw1[selectedItem.switchKey])
     : selectedItem.type === 'busbar'
-      ? (selectedItem.id === 'BUS-A' ? isBusALive : isBusBLive)
-      : false;
+      ? (selectedItem.id === 'BUS-A'
+          ? isBusALive
+          : selectedItem.id === 'BUS-B'
+            ? isBusBLive
+            : selectedItem.id === 'MV-BUS-1'
+              ? isMVBus1Live
+              : isMVBus2Live)
+      : selectedItem.type === 'transformer'
+        ? (selectedItem.id === 'TR-1'
+            ? isTR1_PrimLive
+            : selectedItem.id === 'TR-2'
+              ? isTR2_PrimLive
+              : isHVDC_AC_Live)
+        : false;
 
   return (
     <div className="space-y-4 font-mono text-slate-100">
@@ -927,11 +943,22 @@ const pan = panRef.current;
               if (isCanvasDraggingRef.current) {
                 const dx = (e.clientX - dragStartRef.current.x) / zoomRef.current;
                 const dy = (e.clientY - dragStartRef.current.y) / zoomRef.current;
-                setPan({ x: Math.round(panStartRef.current.x + dx), y: Math.round(panStartRef.current.y + dy) });
+                panRef.current = { x: Math.round(panStartRef.current.x + dx), y: Math.round(panStartRef.current.y + dy) };
+                scheduleTransform();
               }
             }}
-            onMouseUp={() => setIsCanvasDragging(false)}
-            onMouseLeave={() => setIsCanvasDragging(false)}
+            onMouseUp={() => {
+              if (isCanvasDraggingRef.current) {
+                setIsCanvasDragging(false);
+                setPanState({ x: panRef.current.x, y: panRef.current.y });
+              }
+            }}
+            onMouseLeave={() => {
+              if (isCanvasDraggingRef.current) {
+                setIsCanvasDragging(false);
+                setPanState({ x: panRef.current.x, y: panRef.current.y });
+              }
+            }}
             onWheel={(e) => {
               const delta = e.deltaY < 0 ? 0.1 : -0.1;
               setZoom(Math.min(2.5, Math.max(0.5, Number((zoomRef.current + delta).toFixed(2)))));
@@ -1608,6 +1635,19 @@ const pan = panRef.current;
 
               <g
                 className="cursor-pointer"
+                onMouseEnter={(e) =>
+                  handleInterlockHover(
+                    e,
+                    '89-2',
+                    'TR-1 MV Incomer Disconnector',
+                    sw1.mvDisconnect89_2,
+                    !sw1.mvBreaker52_2,
+                    'IL-101: Disconnector Off-Load Operation Only',
+                    'Disconnector 89-2 cannot operate while MV Breaker 52-2 is closed.',
+                    sw1.mvBreaker52_2 ? ['MV Breaker 52-2 is CLOSED'] : []
+                  )
+                }
+                onMouseLeave={() => setHoverInterlock(null)}
                 onClick={() => {
                   setSelectedItem({
                     id: '89-2',
@@ -3849,6 +3889,149 @@ const pan = panRef.current;
                       <span className="font-bold text-emerald-400">100% CONTACT MESH</span>
                     </div>
                   </>
+                ) : selectedItem.type === 'transformer' ? (
+                  <>
+                    <div className="bg-zinc-900/90 p-3 rounded-xl border border-zinc-800 flex justify-between items-center">
+                      <span className="text-zinc-400 font-sans">Top Oil Temperature:</span>
+                      <span className={`font-bold ${
+                        (selectedItem.id === 'TR-2' ? tr2State.oilTemp : tr1State.oilTemp) > 75
+                          ? 'text-rose-400'
+                          : (selectedItem.id === 'TR-2' ? tr2State.oilTemp : tr1State.oilTemp) > 60
+                            ? 'text-amber-400'
+                            : 'text-emerald-400'
+                      }`}>
+                        {(selectedItem.id === 'TR-2' ? tr2State.oilTemp : tr1State.oilTemp).toFixed(1)} °C (Limit: 85°C)
+                      </span>
+                    </div>
+                    <div className="bg-zinc-900/90 p-3 rounded-xl border border-zinc-800 flex justify-between items-center">
+                      <span className="text-zinc-400 font-sans">Winding Hot Spot:</span>
+                      <span className={`font-bold ${
+                        (selectedItem.id === 'TR-2' ? tr2State.windingTemp : tr1State.windingTemp) > 95
+                          ? 'text-rose-400'
+                          : 'text-cyan-300'
+                      }`}>
+                        {(selectedItem.id === 'TR-2' ? tr2State.windingTemp : tr1State.windingTemp).toFixed(1)} °C
+                      </span>
+                    </div>
+                    <div className="bg-zinc-900/90 p-3 rounded-xl border border-zinc-800 flex justify-between items-center">
+                      <span className="text-zinc-400 font-sans">Active / Reactive Power:</span>
+                      <span className="font-bold text-emerald-400">
+                        {((selectedItem.id === 'TR-2' ? tr2State.activePower : tr1State.activePower) / 1000).toFixed(2)} MW / {((selectedItem.id === 'TR-2' ? tr2State.reactivePower : tr1State.reactivePower) / 1000).toFixed(2)} MVAR
+                      </span>
+                    </div>
+                    <div className="bg-zinc-900/90 p-3 rounded-xl border border-zinc-800 flex justify-between items-center">
+                      <span className="text-zinc-400 font-sans">Power Factor &amp; Current:</span>
+                      <span className="font-bold text-zinc-200">
+                        cos φ {(selectedItem.id === 'TR-2' ? tr2State.pf : tr1State.pf).toFixed(2)} (Lag) • {(selectedItem.id === 'TR-2' ? tr2State.loadCurrent : tr1State.loadCurrent).toFixed(1)} A
+                      </span>
+                    </div>
+                    <div className="bg-zinc-900/90 p-3 rounded-xl border border-zinc-800 flex justify-between items-center">
+                      <span className="text-zinc-400 font-sans">OLTC Tap Position:</span>
+                      <span className="font-bold text-amber-300">
+                        Tap {(selectedItem.id === 'TR-2' ? tr2State.tapPosition : tr1State.tapPosition)} / 17 ({(selectedItem.id === 'TR-2' ? tr2State.tapMode : tr1State.tapMode)}) • {(selectedItem.id === 'TR-2' ? tr2State.tapOps : tr1State.tapOps)} Ops
+                      </span>
+                    </div>
+                    <div className="bg-zinc-900/90 p-3 rounded-xl border border-zinc-800 flex justify-between items-center">
+                      <span className="text-zinc-400 font-sans">IEEE C57.91 Aging Rate:</span>
+                      <span className="font-bold text-purple-300">
+                        FAA: {(selectedItem.id === 'TR-2' ? tr2Aging.faa : tr1Aging.faa).toFixed(2)}x • LOL: {(selectedItem.id === 'TR-2' ? tr2Aging.lolPct : tr1Aging.lolPct).toFixed(3)}%
+                      </span>
+                    </div>
+                    <div className="bg-zinc-900/90 p-3 rounded-xl border border-zinc-800 flex justify-between items-center">
+                      <span className="text-zinc-400 font-sans">Conservator Oil Level:</span>
+                      <span className="font-bold text-cyan-400">
+                        {(selectedItem.id === 'TR-2' ? tr2State.oilLevel1 : tr1State.oilLevel1).toFixed(1)}% (Main) / {(selectedItem.id === 'TR-2' ? tr2State.oilLevel2 : tr1State.oilLevel2).toFixed(1)}% (OLTC)
+                      </span>
+                    </div>
+                    <div className="pt-2">
+                      <button
+                        onClick={() => setDuvalModalTr(selectedItem.id === 'TR-2' ? 'TR-2' : 'TR-1')}
+                        className="w-full py-2 px-3 bg-purple-600/30 hover:bg-purple-600/50 border border-purple-500/50 text-purple-300 rounded-lg font-bold text-[11px] flex items-center justify-center space-x-1.5 transition-colors cursor-pointer font-sans"
+                      >
+                        <span>🔬 Open Duval Triangle DGA Diagnostics</span>
+                      </button>
+                    </div>
+                  </>
+                ) : selectedItem.type === 'busbar' ? (
+                  <>
+                    <div className="bg-zinc-900/90 p-3 rounded-xl border border-zinc-800 flex justify-between items-center">
+                      <span className="text-zinc-400 font-sans">Nominal Bus Voltage:</span>
+                      <span className="font-bold text-amber-300">
+                        {selectedItem.voltageRating}
+                      </span>
+                    </div>
+                    <div className="bg-zinc-900/90 p-3 rounded-xl border border-zinc-800 flex justify-between items-center">
+                      <span className="text-zinc-400 font-sans">Measured Voltage:</span>
+                      <span className={`font-bold ${isSelectedClosed ? 'text-emerald-400' : 'text-zinc-500'}`}>
+                        {selectedItem.id === 'BUS-A'
+                          ? (isBusALive ? `${tr1State.gridVoltage.toFixed(1)} kV` : '0.0 kV')
+                          : selectedItem.id === 'BUS-B'
+                            ? (isBusBLive ? `${(tr2State.gridVoltage || 132.0).toFixed(1)} kV` : '0.0 kV')
+                            : selectedItem.id === 'MV-BUS-1'
+                              ? (isMVBus1Live ? '13.80 kV' : '0.00 kV')
+                              : (isMVBus2Live ? '13.80 kV' : '0.00 kV')}
+                      </span>
+                    </div>
+                    <div className="bg-zinc-900/90 p-3 rounded-xl border border-zinc-800 flex justify-between items-center">
+                      <span className="text-zinc-400 font-sans">Grid Frequency:</span>
+                      <span className="font-bold text-cyan-300">
+                        {(tr1State.frequency || 50.0).toFixed(2)} Hz
+                      </span>
+                    </div>
+                    <div className="bg-zinc-900/90 p-3 rounded-xl border border-zinc-800 flex justify-between items-center">
+                      <span className="text-zinc-400 font-sans">Bus Differential (ANSI 87B):</span>
+                      <span className="font-bold text-emerald-400">
+                        {selectedItem.id.includes('MV') ? 'ANSI 50/51 OVERCURRENT ARMED' : 'ANSI 87B RESTRAINED (0.02 A Diff)'}
+                      </span>
+                    </div>
+                    <div className="bg-zinc-900/90 p-3 rounded-xl border border-zinc-800 flex justify-between items-center">
+                      <span className="text-zinc-400 font-sans">Earthing State:</span>
+                      <span className={`font-bold ${
+                        (selectedItem.id === 'MV-BUS-1' && isBus1Grounded) || (selectedItem.id === 'MV-BUS-2' && isBus2Grounded)
+                          ? 'text-amber-400'
+                          : 'text-zinc-300'
+                      }`}>
+                        {selectedItem.id === 'MV-BUS-1'
+                          ? (isBus1Grounded ? 'EARTH SWITCH 84-1 CLOSED' : 'ISOLATED FROM EARTH')
+                          : selectedItem.id === 'MV-BUS-2'
+                            ? (isBus2Grounded ? 'EARTH SWITCH 84-2 CLOSED' : 'ISOLATED FROM EARTH')
+                            : 'ISOLATED FROM EARTH'}
+                      </span>
+                    </div>
+                  </>
+                ) : selectedItem.type === 'disconnector' ? (
+                  <>
+                    <div className="bg-zinc-900/90 p-3 rounded-xl border border-zinc-800 flex justify-between items-center">
+                      <span className="text-zinc-400 font-sans">Disconnector Position:</span>
+                      <span className={`font-bold ${isSelectedClosed ? 'text-emerald-400' : 'text-zinc-400'}`}>
+                        {isSelectedClosed ? 'CLOSED (ISOLATOR ENGAGED)' : 'OPEN (AIR GAP ISOLATED)'}
+                      </span>
+                    </div>
+                    <div className="bg-zinc-900/90 p-3 rounded-xl border border-zinc-800 flex justify-between items-center">
+                      <span className="text-zinc-400 font-sans">Rated Withstand:</span>
+                      <span className="font-bold text-zinc-200">
+                        {selectedItem.voltageRating} • {selectedItem.currentRating}
+                      </span>
+                    </div>
+                    <div className="bg-zinc-900/90 p-3 rounded-xl border border-zinc-800 flex justify-between items-center">
+                      <span className="text-zinc-400 font-sans">Operating Mechanism:</span>
+                      <span className="font-bold text-cyan-300">
+                        110V DC Motorized Gearbox (12s stroke)
+                      </span>
+                    </div>
+                    <div className="bg-zinc-900/90 p-3 rounded-xl border border-zinc-800 flex justify-between items-center">
+                      <span className="text-zinc-400 font-sans">Contact Resistance:</span>
+                      <span className="font-bold text-emerald-400">
+                        18.4 μΩ (IEC 62271-102 Pass &lt; 35 μΩ)
+                      </span>
+                    </div>
+                    <div className="bg-zinc-900/90 p-3 rounded-xl border border-zinc-800 flex justify-between items-center">
+                      <span className="text-zinc-400 font-sans">Interlock Permission:</span>
+                      <span className="font-bold text-amber-400">
+                        IL-101 VERIFIED (Off-Load Operation)
+                      </span>
+                    </div>
+                  </>
                 ) : (
                   <>
                     <div className="bg-zinc-900/90 p-3 rounded-xl border border-zinc-800 flex justify-between items-center">
@@ -3878,6 +4061,10 @@ const pan = panRef.current;
                     <div className="bg-zinc-900/90 p-3 rounded-xl border border-zinc-800 flex justify-between items-center">
                       <span className="text-zinc-400 font-sans">SF6 Gas Density:</span>
                       <span className="font-bold text-emerald-400">6.2 Bar (NOMINAL)</span>
+                    </div>
+                    <div className="bg-zinc-900/90 p-3 rounded-xl border border-zinc-800 flex justify-between items-center">
+                      <span className="text-zinc-400 font-sans">Trip Coil Supervision:</span>
+                      <span className="font-bold text-emerald-400">TC1 &amp; TC2 HEALTHY (ANSI 74)</span>
                     </div>
                   </>
                 )}

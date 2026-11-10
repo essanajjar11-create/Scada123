@@ -29,7 +29,7 @@ const SldMinimapImpl: React.FC<SldMinimapProps> = ({
   const { t } = useScada();
   const mapWidth = 200;
   const mapHeight = 125;
-  const scaleX = mapWidth / 1000;
+  const scaleX = mapWidth / 1200;
   const scaleY = mapHeight / 650;
 
   const [isDragging, setIsDragging] = useState(false);
@@ -47,11 +47,11 @@ const SldMinimapImpl: React.FC<SldMinimapProps> = ({
     const clickX = Math.max(0, Math.min(mapWidth, clientX - rect.left));
     const clickY = Math.max(0, Math.min(mapHeight, clientY - rect.top));
 
-    // Calculate center relative to SLD space (1000 x 650)
+    // Calculate center relative to SLD space (1200 x 650)
     const targetSvgX = clickX / scaleX;
     const targetSvgY = clickY / scaleY;
 
-    const newPanX = 500 - targetSvgX;
+    const newPanX = 600 - targetSvgX;
     const newPanY = 325 - targetSvgY;
     onPanTo(newPanX, newPanY);
   };
@@ -135,11 +135,24 @@ const SldMinimapImpl: React.FC<SldMinimapProps> = ({
             strokeDasharray="2 2"
           />
 
+          {/* Bay 07: HVDC VSC-MMC */}
+          <rect
+            x={920 * scaleX}
+            y={50 * scaleY}
+            width={240 * scaleX}
+            height={400 * scaleY}
+            fill={focusedBay === 'BAY_07_HVDC' ? '#06b6d4' : '#6366f1'}
+            fillOpacity={focusedBay === 'BAY_07_HVDC' ? '0.2' : '0.04'}
+            stroke={focusedBay === 'BAY_07_HVDC' ? '#06b6d4' : '#1e293b'}
+            strokeWidth="1"
+            strokeDasharray="2 2"
+          />
+
           {/* 132kV Main Bus A & B mini lines */}
           <line
             x1={90 * scaleX}
             y1={80 * scaleY}
-            x2={910 * scaleX}
+            x2={1100 * scaleX}
             y2={80 * scaleY}
             stroke={isBusALive ? '#10b981' : '#52525b'}
             strokeWidth="2.5"
@@ -147,7 +160,7 @@ const SldMinimapImpl: React.FC<SldMinimapProps> = ({
           <line
             x1={90 * scaleX}
             y1={120 * scaleY}
-            x2={910 * scaleX}
+            x2={1100 * scaleX}
             y2={120 * scaleY}
             stroke={isBusBLive ? '#10b981' : '#52525b'}
             strokeWidth="2.5"
@@ -213,6 +226,21 @@ const SldMinimapImpl: React.FC<SldMinimapProps> = ({
             strokeWidth="1"
             rx="1"
           />
+
+          {/* HVDC Bay 07 Converter & DC link */}
+          <line x1={1020 * scaleX} y1={80 * scaleY} x2={1020 * scaleX} y2={230 * scaleY} stroke="#10b981" strokeWidth="1.5" />
+          <rect
+            x={995 * scaleX}
+            y={235 * scaleY}
+            width={50 * scaleX}
+            height={40 * scaleY}
+            fill="#1e1b4b"
+            stroke="#818cf8"
+            strokeWidth="1"
+            rx="2"
+          />
+          <line x1={995 * scaleX} y1={275 * scaleY} x2={995 * scaleX} y2={390 * scaleY} stroke="#ef4444" strokeWidth="1.5" />
+          <line x1={1045 * scaleX} y1={275 * scaleY} x2={1045 * scaleX} y2={390 * scaleY} stroke="#3b82f6" strokeWidth="1.5" />
 
           {/* Draggable Active Viewport Lens Box */}
           <rect
