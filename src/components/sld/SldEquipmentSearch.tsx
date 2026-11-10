@@ -24,8 +24,8 @@ export const SUBSTATION_EQUIPMENT_REGISTRY: EquipmentTarget[] = [
   { id: '89-1A', name: 'TR-1 Busbar A Disconnector (89-1A)', ansiCode: 'ANSI 89', bay: 'TR-1 Bay 01', voltage: '132.0 kV', x: 230, y: 70, type: 'disconnector' },
   { id: '89-1B', name: 'TR-1 Busbar B Disconnector (89-1B)', ansiCode: 'ANSI 89', bay: 'TR-1 Bay 01', voltage: '132.0 kV', x: 280, y: 115, type: 'disconnector' },
   { id: '52-1', name: 'TR-1 Primary HV Circuit Breaker (52-1)', ansiCode: 'ANSI 52', bay: 'TR-1 Bay 01', voltage: '132.0 kV', x: 255, y: 175, type: 'breaker' },
-  { id: 'CT-1', name: 'TR-1 HV 3-Phase Optical CT (600/5A)', ansiCode: 'CT', bay: 'TR-1 Bay 01', voltage: '132.0 kV', x: 255, y: 205, type: 'instrument' },
-  { id: 'TR-1', name: 'Power Transformer TR-1 (50MVA Dyn11)', ansiCode: 'ANSI 87T', bay: 'TR-1 Bay 01', voltage: '132/13.8 kV', x: 255, y: 275, type: 'transformer' },
+  { id: 'CT-1', name: 'TR-1 HV 3-Phase Optical CT (300/5A)', ansiCode: 'CT', bay: 'TR-1 Bay 01', voltage: '132.0 kV', x: 255, y: 205, type: 'instrument' },
+  { id: 'TR-1', name: 'Power Transformer TR-1 (40MVA Dyn11)', ansiCode: 'ANSI 87T', bay: 'TR-1 Bay 01', voltage: '132/13.8 kV', x: 255, y: 275, type: 'transformer' },
   { id: '52-2', name: 'TR-1 Incomer MV Circuit Breaker (52-2)', ansiCode: 'ANSI 52', bay: 'TR-1 Bay 01', voltage: '13.8 kV', x: 255, y: 355, type: 'breaker' },
   { id: '89-2', name: 'TR-1 Incomer MV Disconnector (89-2)', ansiCode: 'ANSI 89', bay: 'TR-1 Bay 01', voltage: '13.8 kV', x: 255, y: 385, type: 'disconnector' },
 
@@ -33,8 +33,8 @@ export const SUBSTATION_EQUIPMENT_REGISTRY: EquipmentTarget[] = [
   { id: '89-2A', name: 'TR-2 Busbar A Disconnector (89-2A)', ansiCode: 'ANSI 89', bay: 'TR-2 Bay 03', voltage: '132.0 kV', x: 720, y: 70, type: 'disconnector' },
   { id: '89-2B', name: 'TR-2 Busbar B Disconnector (89-2B)', ansiCode: 'ANSI 89', bay: 'TR-2 Bay 03', voltage: '132.0 kV', x: 770, y: 115, type: 'disconnector' },
   { id: '52-4', name: 'TR-2 Primary HV Circuit Breaker (52-4)', ansiCode: 'ANSI 52', bay: 'TR-2 Bay 03', voltage: '132.0 kV', x: 745, y: 175, type: 'breaker' },
-  { id: 'CT-2', name: 'TR-2 HV 3-Phase Optical CT (600/5A)', ansiCode: 'CT', bay: 'TR-2 Bay 03', voltage: '132.0 kV', x: 745, y: 205, type: 'instrument' },
-  { id: 'TR-2', name: 'Power Transformer TR-2 (50MVA Dyn11)', ansiCode: 'ANSI 87T', bay: 'TR-2 Bay 03', voltage: '132/13.8 kV', x: 745, y: 275, type: 'transformer' },
+  { id: 'CT-2', name: 'TR-2 HV 3-Phase Optical CT (300/5A)', ansiCode: 'CT', bay: 'TR-2 Bay 03', voltage: '132.0 kV', x: 745, y: 205, type: 'instrument' },
+  { id: 'TR-2', name: 'Power Transformer TR-2 (40MVA Dyn11)', ansiCode: 'ANSI 87T', bay: 'TR-2 Bay 03', voltage: '132/13.8 kV', x: 745, y: 275, type: 'transformer' },
   { id: '52-5', name: 'TR-2 Incomer MV Circuit Breaker (52-5)', ansiCode: 'ANSI 52', bay: 'TR-2 Bay 03', voltage: '13.8 kV', x: 745, y: 355, type: 'breaker' },
   { id: '89-5', name: 'TR-2 Incomer MV Disconnector (89-5)', ansiCode: 'ANSI 89', bay: 'TR-2 Bay 03', voltage: '13.8 kV', x: 745, y: 385, type: 'disconnector' },
 

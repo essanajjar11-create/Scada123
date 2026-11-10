@@ -46,6 +46,7 @@ export const PowerQualityHarmonicsModule: React.FC = () => {
     const orders = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 29, 31, 35, 37, 41, 47, 49];
     const filterFactor = filterActive ? 0.22 : 1.0;
     const mult = (nonLinearLoadPct / 35.0) * filterFactor;
+    const baseLoadA = tr1Telemetry?.loadCurrent ?? 122.5;
 
     return orders.map((h) => {
       if (h === 1) {
@@ -54,8 +55,8 @@ export const PowerQualityHarmonicsModule: React.FC = () => {
           frequencyHz: 50,
           voltagePct: 100,
           currentPct: 100,
-          vMagKV: 76.2,
-          iMagA: 218.0,
+          vMagKV: 76.21,
+          iMagA: baseLoadA,
           ieeeLimitPct: 100,
           isExceeded: false
         };
@@ -88,8 +89,8 @@ export const PowerQualityHarmonicsModule: React.FC = () => {
         frequencyHz: h * 50,
         voltagePct: vPct,
         currentPct: iPct,
-        vMagKV: Number(((76.2 * vPct) / 100).toFixed(3)),
-        iMagA: Number(((218.0 * iPct) / 100).toFixed(2)),
+        vMagKV: Number(((76.21 * vPct) / 100).toFixed(3)),
+        iMagA: Number(((baseLoadA * iPct) / 100).toFixed(2)),
         ieeeLimitPct: ieeeLimit,
         isExceeded
       };
@@ -117,10 +118,11 @@ export const PowerQualityHarmonicsModule: React.FC = () => {
     ).toFixed(2)
   );
 
-  // Transformer Derating Factor: Pec-r = 0.15 for standard 50MVA core
+  // Transformer Derating Factor: Pec-r = 0.15 for standard 40MVA core
   const pecR = 0.15;
+  const ratingMva = tr1Telemetry?.ratingMVA ?? 40.0;
   const deratingFactorPct = Number((Math.sqrt((1 + pecR) / (1 + kFactor * pecR)) * 100).toFixed(1));
-  const effectiveMva = Number(((50.0 * deratingFactorPct) / 100).toFixed(1));
+  const effectiveMva = Number(((ratingMva * deratingFactorPct) / 100).toFixed(1));
 
   // CBEMA / ITIC Curve Events
   const cbemaEvents: CbemaEvent[] = [

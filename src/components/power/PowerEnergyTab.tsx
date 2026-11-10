@@ -46,9 +46,9 @@ export const PowerEnergyTab: React.FC = () => {
   ];
 
   // Phasor Diagram Calculations (120 deg balanced angles)
-  const vA = activeTelemetry?.phaseA_Voltage ?? 13800;
-  const vB = activeTelemetry?.phaseB_Voltage ?? 13800;
-  const vC = activeTelemetry?.phaseC_Voltage ?? 13800;
+  const vA = activeTelemetry?.phaseA_Voltage ?? 76.21;
+  const vB = activeTelemetry?.phaseB_Voltage ?? 76.21;
+  const vC = activeTelemetry?.phaseC_Voltage ?? 76.21;
 
   const rA = 70;
   const axA = 100 + rA;

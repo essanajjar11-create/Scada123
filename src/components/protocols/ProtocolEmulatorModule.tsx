@@ -50,7 +50,7 @@ export const ProtocolEmulatorModule: React.FC = () => {
   const [modbusQuantity, setModbusQuantity] = useState<number>(6);
   const [modbusWriteVal, setModbusWriteVal] = useState<number>(13200);
   const [modbusWriteCoilState, setModbusWriteCoilState] = useState<boolean>(true);
-  const [modbusWriteMultiVals, setModbusWriteMultiVals] = useState<string>('13200, 2180, 450, 120');
+  const [modbusWriteMultiVals, setModbusWriteMultiVals] = useState<string>('13200, 1225, 238, 148');
   const [selectedMemoryTable, setSelectedMemoryTable] = useState<'HR' | 'IR' | 'COIL' | 'DI'>('HR');
   const [copiedLogId, setCopiedLogId] = useState<string | null>(null);
 
@@ -76,16 +76,16 @@ export const ProtocolEmulatorModule: React.FC = () => {
   // Live Holding Registers (40001 - 40016 / 4x)
   const [holdingRegisters, setHoldingRegisters] = useState<Record<number, number>>({
     40001: Math.round((tr1Telemetry?.gridVoltage ?? 132.0) * 100),  // 132.00 kV -> 13200
-    40002: Math.round((tr1Telemetry?.loadCurrent ?? 218.4) * 10),   // 218.4 A -> 2184
-    40003: Math.round(((tr1Telemetry?.activePower ?? 45000) / 1000) * 10), // 45.0 MW -> 450
-    40004: Math.round(((tr1Telemetry?.reactivePower ?? 12500) / 1000) * 10), // 12.5 MVAR -> 125
+    40002: Math.round((tr1Telemetry?.loadCurrent ?? 122.5) * 10),   // 122.5 A -> 1225
+    40003: Math.round(((tr1Telemetry?.activePower ?? 23800) / 1000) * 10), // 23.8 MW -> 238
+    40004: Math.round(((tr1Telemetry?.reactivePower ?? 14750) / 1000) * 10), // 14.8 MVAR -> 148
     40005: Math.round((tr1Telemetry?.oilTemp ?? 62.4) * 10),        // 62.4 °C -> 624
     40006: Math.round((tr1Telemetry?.windingTemp ?? 71.8) * 10),    // 71.8 °C -> 718
     40007: tr1Telemetry?.tapPosition ?? 7,                         // Tap Position 1-17
     40008: Math.round((tr2Telemetry?.gridVoltage ?? 132.0) * 100),  // TR2 V -> 13200
-    40009: Math.round((tr2Telemetry?.loadCurrent ?? 205.0) * 10),   // TR2 I -> 2050
+    40009: Math.round((tr2Telemetry?.loadCurrent ?? 105.0) * 10),   // TR2 I -> 1050
     40010: Math.round((gridFrequency ?? 50.0) * 100),              // 50.00 Hz -> 5000
-    40011: Math.round((tr1Telemetry?.pf ?? 0.965) * 1000),         // PF 0.965 -> 965
+    40011: Math.round((tr1Telemetry?.pf ?? 0.85) * 1000),          // PF 0.850 -> 850
     40012: Math.round((tr1Telemetry?.thd ?? 1.85) * 100),          // THD 1.85% -> 185
     40013: Math.floor((tr1Telemetry?.fwdEnergy ?? 184500) / 65536),// Energy High Word
     40014: (tr1Telemetry?.fwdEnergy ?? 184500) % 65536,             // Energy Low Word
@@ -95,9 +95,9 @@ export const ProtocolEmulatorModule: React.FC = () => {
 
   // Live Input Registers (30001 - 30012 / 3x - Read-Only)
   const inputRegisters: Record<number, { val: number; name: string; eng: string; scale: string }> = {
-    30001: { val: Math.round((tr1Telemetry?.ctSecA ?? 4.36) * 100), name: 'CT Secondary Phase A', eng: `${(tr1Telemetry?.ctSecA ?? 4.36).toFixed(2)} A`, scale: 'x100' },
-    30002: { val: Math.round((tr1Telemetry?.ctSecB ?? 4.34) * 100), name: 'CT Secondary Phase B', eng: `${(tr1Telemetry?.ctSecB ?? 4.34).toFixed(2)} A`, scale: 'x100' },
-    30003: { val: Math.round((tr1Telemetry?.ctSecC ?? 4.38) * 100), name: 'CT Secondary Phase C', eng: `${(tr1Telemetry?.ctSecC ?? 4.38).toFixed(2)} A`, scale: 'x100' },
+    30001: { val: Math.round((tr1Telemetry?.ctSecA ?? 2.04) * 100), name: 'CT Secondary Phase A', eng: `${(tr1Telemetry?.ctSecA ?? 2.04).toFixed(2)} A`, scale: 'x100' },
+    30002: { val: Math.round((tr1Telemetry?.ctSecB ?? 2.04) * 100), name: 'CT Secondary Phase B', eng: `${(tr1Telemetry?.ctSecB ?? 2.04).toFixed(2)} A`, scale: 'x100' },
+    30003: { val: Math.round((tr1Telemetry?.ctSecC ?? 2.04) * 100), name: 'CT Secondary Phase C', eng: `${(tr1Telemetry?.ctSecC ?? 2.04).toFixed(2)} A`, scale: 'x100' },
     30004: { val: Math.round((tr1Telemetry?.ctBurdenVA ?? 8.5) * 100), name: 'CT Burden', eng: `${(tr1Telemetry?.ctBurdenVA ?? 8.5).toFixed(1)} VA`, scale: 'x100' },
     30005: { val: Math.round((tr1Telemetry?.ambientTemp ?? 34.2) * 10), name: 'Substation Ambient Temp', eng: `${(tr1Telemetry?.ambientTemp ?? 34.2).toFixed(1)} °C`, scale: 'x10' },
     30006: { val: Math.round((tr1Telemetry?.bushingTemp ?? 52.1) * 10), name: 'HV Bushing Temp', eng: `${(tr1Telemetry?.bushingTemp ?? 52.1).toFixed(1)} °C`, scale: 'x10' },
@@ -150,16 +150,16 @@ export const ProtocolEmulatorModule: React.FC = () => {
     setHoldingRegisters(prev => ({
       ...prev,
       40001: Math.round((tr1Telemetry?.gridVoltage ?? 132.0) * 100),
-      40002: Math.round((tr1Telemetry?.loadCurrent ?? 218.4) * 10),
-      40003: Math.round(((tr1Telemetry?.activePower ?? 45000) / 1000) * 10),
-      40004: Math.round(((tr1Telemetry?.reactivePower ?? 12500) / 1000) * 10),
+      40002: Math.round((tr1Telemetry?.loadCurrent ?? 122.5) * 10),
+      40003: Math.round(((tr1Telemetry?.activePower ?? 23800) / 1000) * 10),
+      40004: Math.round(((tr1Telemetry?.reactivePower ?? 14750) / 1000) * 10),
       40005: Math.round((tr1Telemetry?.oilTemp ?? 62.4) * 10),
       40006: Math.round((tr1Telemetry?.windingTemp ?? 71.8) * 10),
       40007: tr1Telemetry?.tapPosition ?? 7,
       40008: Math.round((tr2Telemetry?.gridVoltage ?? 132.0) * 100),
-      40009: Math.round((tr2Telemetry?.loadCurrent ?? 205.0) * 10),
+      40009: Math.round((tr2Telemetry?.loadCurrent ?? 105.0) * 10),
       40010: Math.round((gridFrequency ?? 50.0) * 100),
-      40011: Math.round((tr1Telemetry?.pf ?? 0.965) * 1000),
+      40011: Math.round((tr1Telemetry?.pf ?? 0.85) * 1000),
       40012: Math.round((tr1Telemetry?.thd ?? 1.85) * 100),
     }));
   }, [tr1Telemetry, tr2Telemetry, gridFrequency]);
@@ -509,7 +509,7 @@ export const ProtocolEmulatorModule: React.FC = () => {
       asduName = 'M_ME_NC_1 (13) Measured Short Float';
       cotVal = 3; // Spontaneous
       ioaVal = 4001;
-      const fVal = (tr1Telemetry?.activePower ?? 45000) / 1000; // MW
+      const fVal = (tr1Telemetry?.activePower ?? 23800) / 1000; // MW
       valStr = `${fVal.toFixed(2)} MW (TR1 Active Power)`;
       apduHex = `68 12 ${nsHex} ${nrHex} 0D 01 03 00 ${iecCasdu.toString(16).padStart(2, '0')} 00 A1 0F 00 42 C8 00 00 00`;
     } else {
@@ -711,7 +711,7 @@ export const ProtocolEmulatorModule: React.FC = () => {
                     type="text"
                     value={modbusWriteMultiVals}
                     onChange={(e) => setModbusWriteMultiVals(e.target.value)}
-                    placeholder="13200, 2180, 450, 125"
+                    placeholder="13200, 1225, 238, 148"
                     className="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2 text-white font-mono"
                   />
                 </div>
@@ -1147,7 +1147,7 @@ export const ProtocolEmulatorModule: React.FC = () => {
                     onClick={() => handleSendIec104('FLOAT_MEAS')}
                     className="py-2.5 px-3 bg-zinc-900 hover:bg-zinc-800 border border-cyan-800/60 rounded-xl text-xs font-mono text-left flex items-center justify-between text-cyan-300 transition-all cursor-pointer"
                   >
-                    <span><strong>ASDU 13:</strong> Measured Float (TR1 {((tr1Telemetry?.activePower ?? 45000)/1000).toFixed(1)} MW)</span>
+                    <span><strong>ASDU 13:</strong> Measured Float (TR1 {((tr1Telemetry?.activePower ?? 23800)/1000).toFixed(1)} MW)</span>
                     <ArrowRight className="w-4 h-4" />
                   </button>
                   <button

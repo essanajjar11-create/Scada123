@@ -111,6 +111,8 @@ export const SingleLineDiagramTab: React.FC = () => {
     dgaData,
     auditLogs,
     t,
+    bessState,
+    setBessManualPower,
     hvdcState,
     setHvdcSetpoints,
     setHvdcControlMode,
@@ -278,12 +280,12 @@ const pan = panRef.current;
     id: string;
     name: string;
     bay: string;
-    loadType: 'Transformer (50MVA Core)' | 'Capacitor Bank (10MVAR)' | 'Transmission Line (132kV)';
+    loadType: 'Transformer (40MVA Core)' | 'Capacitor Bank (10MVAR)' | 'Transmission Line (132kV)';
   } | null>(null);
   const [iecInspectorOpen, setIecInspectorOpen] = useState(false);
 
-  // BESS Mode State
-  const [bessDischarging, setBessDischarging] = useState(false);
+  // BESS Mode State derived from live BESS telemetry
+  const bessDischarging = bessState.powerMW > 0;
 
   // Active Macro Highlight Preview path state
   const [previewMacroPath, setPreviewMacroPath] = useState<'ATS' | 'ISOLATION' | 'UFLS' | null>(null);
@@ -1496,7 +1498,7 @@ const pan = panRef.current;
                       id: '52-1',
                       name: 'TR-1 Primary HV Circuit Breaker',
                       bay: 'TR-1 Transformer Bay 01',
-                      loadType: 'Transformer (50MVA Core)',
+                      loadType: 'Transformer (40MVA Core)',
                     })
                   }
                 >
@@ -1783,7 +1785,7 @@ const pan = panRef.current;
                       id: '52-4',
                       name: 'TR-2 Primary HV Circuit Breaker',
                       bay: 'TR-2 Transformer Bay 03',
-                      loadType: 'Transformer (50MVA Core)',
+                      loadType: 'Transformer (40MVA Core)',
                     })
                   }
                 >
@@ -2915,13 +2917,13 @@ const pan = panRef.current;
                   </g>
 
                   {/* Interactive BESS Sub-Bay Telemetry Box */}
-                  <g className="cursor-pointer" onClick={() => setBessDischarging(!bessDischarging)}>
+                  <g className="cursor-pointer" onClick={() => setBessManualPower(bessDischarging ? -4.5 : 8.0)}>
                     <rect x="-44" y="75" width="88" height="42" fill="#090d16" stroke="#a855f7" strokeWidth="2" rx="6" />
                     <text x="0" y="88" fill="#e879f9" fontSize="9" textAnchor="middle" fontWeight="bold">10MW BESS BAY</text>
-                    <text x="0" y="100" fill="#38bdf8" fontSize="8" textAnchor="middle">84.2% SOC • 98.6% SOH</text>
+                    <text x="0" y="100" fill="#38bdf8" fontSize="8" textAnchor="middle">{bessState.socPct.toFixed(1)}% SOC • 98.6% SOH</text>
                     <rect x="-38" y="105" width="76" height="10" fill={bessDischarging ? '#c084fc' : '#090d16'} rx="3" stroke="#a855f7" strokeWidth="1" />
                     <text x="0" y="113" fill={bessDischarging ? '#020617' : '#a855f7'} fontSize="7" textAnchor="middle" fontWeight="bold">
-                      {bessDischarging ? 'DISCHARGING 8.4MW' : 'FFR ARMED / CHARGING'}
+                      {bessState.powerMW > 0 ? `DISCHARGING +${bessState.powerMW.toFixed(1)}MW` : bessState.powerMW < 0 ? `CHARGING ${bessState.powerMW.toFixed(1)}MW` : 'STANDBY 0.0MW'}
                     </text>
                   </g>
                 </g>
@@ -2980,9 +2982,9 @@ const pan = panRef.current;
 
                       {/* TR-1 P+jQ Flow Badge */}
                       <g transform="translate(230, 320)">
-                        <rect x="0" y="0" width="82" height="24" fill="#022c22" stroke="#10b981" strokeWidth="1" rx="4" opacity="0.9" />
-                        <text x="5" y="10" fill="#34d399" fontSize="7.5" fontWeight="bold">P: +38.4 MW</text>
-                        <text x="5" y="20" fill="#6ee7b7" fontSize="7" fontStyle="italic">Q: +6.2 MVAr (0.98)</text>
+                        <rect x="0" y="0" width="86" height="24" fill="#022c22" stroke="#10b981" strokeWidth="1" rx="4" opacity="0.9" />
+                        <text x="5" y="10" fill="#34d399" fontSize="7.5" fontWeight="bold">P: +{((tr1State?.activePower ?? 23800) / 1000).toFixed(1)} MW</text>
+                        <text x="5" y="20" fill="#6ee7b7" fontSize="7" fontStyle="italic">Q: +{((tr1State?.reactivePower ?? 14750) / 1000).toFixed(1)} MVAr ({(tr1State?.pf ?? 0.85).toFixed(2)})</text>
                       </g>
                     </>
                   )}
@@ -3030,9 +3032,9 @@ const pan = panRef.current;
 
                       {/* TR-2 P+jQ Flow Badge */}
                       <g transform="translate(715, 320)">
-                        <rect x="0" y="0" width="82" height="24" fill="#022c22" stroke="#10b981" strokeWidth="1" rx="4" opacity="0.9" />
-                        <text x="5" y="10" fill="#34d399" fontSize="7.5" fontWeight="bold">P: +26.1 MW</text>
-                        <text x="5" y="20" fill="#6ee7b7" fontSize="7" fontStyle="italic">Q: +4.1 MVAr (0.98)</text>
+                        <rect x="0" y="0" width="86" height="24" fill="#022c22" stroke="#10b981" strokeWidth="1" rx="4" opacity="0.9" />
+                        <text x="5" y="10" fill="#34d399" fontSize="7.5" fontWeight="bold">P: +{((tr2State?.activePower ?? 20400) / 1000).toFixed(1)} MW</text>
+                        <text x="5" y="20" fill="#6ee7b7" fontSize="7" fontStyle="italic">Q: +{((tr2State?.reactivePower ?? 12640) / 1000).toFixed(1)} MVAr ({(tr2State?.pf ?? 0.85).toFixed(2)})</text>
                       </g>
                     </>
                   )}
@@ -3052,8 +3054,8 @@ const pan = panRef.current;
                         <animate attributeName="cy" values="500;420" dur="0.8s" repeatCount="indefinite" />
                       </circle>
                       <g transform="translate(865, 435)">
-                        <rect x="0" y="0" width="75" height="22" fill="#3b0764" stroke="#c084fc" strokeWidth="1" rx="4" opacity="0.9" />
-                        <text x="5" y="9" fill="#e879f9" fontSize="7" fontWeight="bold">BESS: -8.4 MW</text>
+                        <rect x="0" y="0" width="82" height="22" fill="#3b0764" stroke="#c084fc" strokeWidth="1" rx="4" opacity="0.9" />
+                        <text x="5" y="9" fill="#e879f9" fontSize="7" fontWeight="bold">BESS: {bessState.powerMW >= 0 ? `+${bessState.powerMW.toFixed(1)}` : bessState.powerMW.toFixed(1)} MW</text>
                         <text x="5" y="18" fill="#f0abfc" fontSize="6.5">Grid-Forming FFR</text>
                       </g>
                     </>
@@ -3774,11 +3776,15 @@ const pan = panRef.current;
                   <>
                     <div className="bg-zinc-900/90 p-3 rounded-xl border border-zinc-800 flex justify-between items-center">
                       <span className="text-zinc-400 font-sans">BESS Active Power:</span>
-                      <span className="font-bold text-purple-400">{bessDischarging ? '-8.4 MW (DISCHARGE)' : '+2.1 MW (CHARGE)'}</span>
+                      <span className="font-bold text-purple-400">
+                        {bessState.powerMW > 0 ? `+${bessState.powerMW.toFixed(1)} MW (DISCHARGE)` : bessState.powerMW < 0 ? `${bessState.powerMW.toFixed(1)} MW (CHARGE)` : '0.0 MW (STANDBY)'}
+                      </span>
                     </div>
                     <div className="bg-zinc-900/90 p-3 rounded-xl border border-zinc-800 flex justify-between items-center">
                       <span className="text-zinc-400 font-sans">State of Charge (SOC):</span>
-                      <span className="font-bold text-emerald-400">84.2% (16.84 MWh)</span>
+                      <span className="font-bold text-emerald-400">
+                        {bessState.socPct.toFixed(1)}% ({((bessState.socPct / 100) * bessState.capacityMWh).toFixed(1)} MWh)
+                      </span>
                     </div>
                     <div className="bg-zinc-900/90 p-3 rounded-xl border border-zinc-800 flex justify-between items-center">
                       <span className="text-zinc-400 font-sans">State of Health (SOH):</span>

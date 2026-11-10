@@ -6,7 +6,7 @@ interface PointOnWaveModalProps {
   breakerId: string;
   breakerName: string;
   bayName: string;
-  loadType: 'Transformer (50MVA Core)' | 'Capacitor Bank (10MVAR)' | 'Transmission Line (132kV)';
+  loadType: 'Transformer (40MVA Core)' | 'Capacitor Bank (10MVAR)' | 'Transmission Line (132kV)';
   onClose: () => void;
 }
 

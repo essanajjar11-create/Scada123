@@ -66,10 +66,10 @@ export const ComtradeGeneratorModule: React.FC = () => {
       const isFaultActive = tMs >= faultInceptionMs && tMs < clearingTimeMs;
       const isPostFault = tMs >= clearingTimeMs;
 
-      // Base Nominal Currents (A rms converted to peak ~500A)
-      let ia = 450 * Math.sin(omega * tSec);
-      let ib = 450 * Math.sin(omega * tSec - (2 * Math.PI) / 3);
-      let ic = 450 * Math.sin(omega * tSec + (2 * Math.PI) / 3);
+      // Base Nominal Currents (122.5A rms converted to peak ~173.2A)
+      let ia = 173.2 * Math.sin(omega * tSec);
+      let ib = 173.2 * Math.sin(omega * tSec - (2 * Math.PI) / 3);
+      let ic = 173.2 * Math.sin(omega * tSec + (2 * Math.PI) / 3);
 
       // Base Nominal Voltages (132kV / sqrt(3) peak ~107.8 kV)
       let va = 107.8 * Math.sin(omega * tSec);

@@ -67,7 +67,7 @@ export const WamsPmuModule: React.FC = () => {
 
   // Current Phasor (Lagging by pf angle ~ 25 deg)
   const currentAngleRad = ((-manualPhaseShift - 25) * Math.PI) / 180;
-  const iMagFactor = ((tr1State?.loadCurrent ?? 450) / 300) * 0.75;
+  const iMagFactor = ((tr1State?.loadCurrent ?? 122.5) / 175.0) * 0.75;
   const iX = centerX + radius * iMagFactor * Math.cos(currentAngleRad);
   const iY = centerY - radius * iMagFactor * Math.sin(currentAngleRad);
 

@@ -64,7 +64,7 @@ const SldProtectionZoneOverlayImpl: React.FC<SldProtectionZoneOverlayProps> = ({
         onClick={() =>
           setSelectedZone({
             zoneCode: 'ANSI 87T-1',
-            name: 'TR-1 50MVA Transformer Differential Zone',
+            name: 'TR-1 40MVA Transformer Differential Zone',
             type: 'Biased Percentage Differential (Dyn11 Compensation)',
             iDiff: '0.02 A',
             iBias: '1.45 A',
@@ -95,7 +95,7 @@ const SldProtectionZoneOverlayImpl: React.FC<SldProtectionZoneOverlayProps> = ({
         onClick={() =>
           setSelectedZone({
             zoneCode: 'ANSI 87T-2',
-            name: 'TR-2 50MVA Transformer Differential Zone',
+            name: 'TR-2 40MVA Transformer Differential Zone',
             type: 'Biased Percentage Differential (Dyn11 Compensation)',
             iDiff: '0.03 A',
             iBias: '1.48 A',

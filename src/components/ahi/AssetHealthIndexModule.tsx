@@ -249,7 +249,7 @@ export const AssetHealthIndexModule: React.FC = () => {
                   : 'text-zinc-400 hover:text-white'
               }`}
             >
-              TR-1 (50MVA)
+              TR-1 (40MVA)
             </button>
             <button
               onClick={() => setSelectedTr('TR-2')}
@@ -259,7 +259,7 @@ export const AssetHealthIndexModule: React.FC = () => {
                   : 'text-zinc-400 hover:text-white'
               }`}
             >
-              TR-2 (50MVA)
+              TR-2 (40MVA)
             </button>
           </div>
         </div>

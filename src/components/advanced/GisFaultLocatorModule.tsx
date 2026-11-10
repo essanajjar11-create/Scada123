@@ -14,7 +14,7 @@ export const GisFaultLocatorModule: React.FC = () => {
   const [lineReactancePerKm] = useState<number>(0.38); // Ohm / km
   const [faultCurrentA, setFaultCurrentA] = useState<number>(2400); // Amperes
   const [faultVoltageV, setFaultVoltageV] = useState<number>(14200); // Volts
-  const [prefaultCurrentA] = useState<number>(380); // Amperes
+  const [prefaultCurrentA] = useState<number>(122.5); // Amperes (Nominal TR-1 Primary)
 
   // Takagi Distance Calculation Formula:
   // d = Im(V_f * I_s*) / Im(Z_L * I_f * I_s*)
