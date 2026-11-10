@@ -65,7 +65,7 @@ const SldFloatingGlassDockImpl: React.FC<SldFloatingGlassDockProps> = ({
           {Math.round(zoom * 100)}%
         </span>
         <button
-          onClick={() => onZoomChange(Math.max(0.5, Number((zoom - 0.15).toFixed(2))))}
+          onClick={() => onZoomChange(Math.max(0.4, Number((zoom - 0.15).toFixed(2))))}
           className="p-1.5 rounded-lg text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
           title="Zoom Out (-)"
         >

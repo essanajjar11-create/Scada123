@@ -127,63 +127,234 @@ export const SingleLineDiagramTab: React.FC = () => {
   const [hvdcDiagModalOpen, setHvdcDiagModalOpen] = useState(false);
 
   // Canvas Viewport & Zoom Controls State
-  // Add a stateful zoom and pan value for UI components that need re‑render on zoom/pan change
   const [zoomState, setZoomState] = React.useState<number>(1.0);
   const [panState, setPanState] = React.useState<{ x: number; y: number }>({ x: 0, y: 0 });
-// ==== Performance‑optimized pan/zoom state ====
-// Use refs to avoid React re‑renders on every mouse move.
-const zoomRef = React.useRef<number>(1.0);
-const panRef = React.useRef<{ x: number; y: number }>({ x: 0, y: 0 });
-const isCanvasDraggingRef = React.useRef<boolean>(false);
-const dragStartRef = React.useRef<{ x: number; y: number }>({ x: 0, y: 0 });
-const panStartRef = React.useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [isCanvasDragging, setIsCanvasDragging] = React.useState<boolean>(false);
 
-// Helper to apply SVG transform without triggering a component render.
-const applyCanvasTransform = () => {
-  if (svgRef.current) {
-    const { x, y } = panRef.current;
-    const scale = zoomRef.current;
-    svgRef.current.setAttribute('transform', `translate(${x},${y}) scale(${scale})`);
-    svgRef.current.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
-    svgRef.current.style.transformOrigin = 'center center';
-  }
-};
+  const containerRef = React.useRef<HTMLDivElement | null>(null);
+  const svgRef = React.useRef<SVGSVGElement | null>(null);
 
-// Throttle transform updates via requestAnimationFrame.
-let rafId = null as number | null;
-const scheduleTransform = () => {
-  if (rafId !== null) return; // already scheduled
-  rafId = requestAnimationFrame(() => {
-    applyCanvasTransform();
-    rafId = null;
-  });
-};
+  // Performance-optimized pan/zoom refs to prevent unnecessary re-renders during 60fps dragging
+  const zoomRef = React.useRef<number>(1.0);
+  const panRef = React.useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const isCanvasDraggingRef = React.useRef<boolean>(false);
+  const dragStartRef = React.useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const panStartRef = React.useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const hasDraggedRef = React.useRef<boolean>(false);
 
-// Expose mutable refs via setters used by UI handlers.
-  const setZoom = (v: number) => {
-    zoomRef.current = v;
-    setZoomState(v);
-    scheduleTransform();
+  // Unified transform applier:
+  // When animate is true, applies a silky smooth transition (for buttons, quick jump, equipment focus, reset).
+  // When animate is false, applies 0ms instant transition (for interactive dragging and mouse wheel zoom).
+  const applyCanvasTransform = (animate = false) => {
+    if (svgRef.current) {
+      const { x, y } = panRef.current;
+      const scale = zoomRef.current;
+      svgRef.current.style.transition = animate ? 'transform 260ms cubic-bezier(0.2, 0, 0, 1)' : 'none';
+      svgRef.current.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
+      svgRef.current.style.transformOrigin = 'center center';
+    }
   };
-const setPan = (v: { x: number; y: number }) => {
-  panRef.current = v;
-  setPanState(v);
-  scheduleTransform();
-};
-const setIsCanvasDragging = (v: boolean) => {
-  isCanvasDraggingRef.current = v;
-};
-const setDragStart = (v: { x: number; y: number }) => {
-  dragStartRef.current = v;
-};
-const setPanStart = (v: { x: number; y: number }) => {
-  panStartRef.current = v;
-};
-// ==== End of performance‑optimized state ====
 
-// Expose current zoom and pan values for components that expect them as plain numbers/objects
-const zoom = zoomState;
-const pan = panState;
+  // Set zoom & pan with full synchronization
+  const setZoomAndPan = (newZoom: number, newPan: { x: number; y: number }, animate = false) => {
+    const clampedZoom = Math.min(2.5, Math.max(0.4, Number(newZoom.toFixed(2))));
+    zoomRef.current = clampedZoom;
+    panRef.current = newPan;
+
+    applyCanvasTransform(animate);
+    setZoomState(clampedZoom);
+    setPanState(newPan);
+  };
+
+  // Zoom into screen center (for toolbar buttons + / -)
+  const setZoom = (v: number, animate = true) => {
+    const clampedZoom = Math.min(2.5, Math.max(0.4, Number(v.toFixed(2))));
+    if (clampedZoom === zoomRef.current) return;
+    const ratio = clampedZoom / zoomRef.current;
+    const newPan = {
+      x: Math.round(panRef.current.x * ratio),
+      y: Math.round(panRef.current.y * ratio),
+    };
+    setZoomAndPan(clampedZoom, newPan, animate);
+  };
+
+  const setPan = (v: { x: number; y: number }, animate = true) => {
+    setZoomAndPan(zoomRef.current, v, animate);
+  };
+
+  const handleResetView = () => {
+    setZoomAndPan(1.0, { x: 0, y: 0 }, true);
+    setFocusedBay('ALL');
+  };
+
+  // Native non-passive Wheel Event Listener for Focal Point Zoom
+  React.useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleWheelNative = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const rect = container.getBoundingClientRect();
+      // Mouse position relative to center of container
+      const mouseX = e.clientX - rect.left - rect.width / 2;
+      const mouseY = e.clientY - rect.top - rect.height / 2;
+
+      // Multiplicative zoom factor (smooth, predictable zoom steps)
+      const factor = e.deltaY < 0 ? 1.12 : 0.89;
+      const currentZoom = zoomRef.current;
+      const newZoom = Math.min(2.5, Math.max(0.4, Number((currentZoom * factor).toFixed(2))));
+
+      if (newZoom === currentZoom) return;
+
+      // Mathematical Focal Point Equation: Keeps the point under cursor perfectly stationary
+      const ratio = newZoom / currentZoom;
+      const newPanX = Math.round(mouseX - (mouseX - panRef.current.x) * ratio);
+      const newPanY = Math.round(mouseY - (mouseY - panRef.current.y) * ratio);
+
+      zoomRef.current = newZoom;
+      panRef.current = { x: newPanX, y: newPanY };
+
+      applyCanvasTransform(false);
+      setZoomState(newZoom);
+      setPanState({ x: newPanX, y: newPanY });
+    };
+
+    container.addEventListener('wheel', handleWheelNative, { passive: false });
+    return () => {
+      container.removeEventListener('wheel', handleWheelNative);
+    };
+  }, []);
+
+  // Global window mouseup listener to prevent drag lock if mouse is released outside container
+  React.useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      if (isCanvasDraggingRef.current) {
+        isCanvasDraggingRef.current = false;
+        setIsCanvasDragging(false);
+        setPanState({ ...panRef.current });
+      }
+    };
+
+    window.addEventListener('mouseup', handleGlobalMouseUp);
+    return () => {
+      window.removeEventListener('mouseup', handleGlobalMouseUp);
+    };
+  }, []);
+
+  // Keyboard navigation (+, -, 0, Arrow keys)
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+        return;
+      }
+
+      if (e.key === '+' || e.key === '=') {
+        e.preventDefault();
+        setZoom(Number((zoomRef.current + 0.15).toFixed(2)), true);
+      } else if (e.key === '-' || e.key === '_') {
+        e.preventDefault();
+        setZoom(Number((zoomRef.current - 0.15).toFixed(2)), true);
+      } else if (e.key === '0') {
+        e.preventDefault();
+        handleResetView();
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        setPan({ x: panRef.current.x + 60, y: panRef.current.y }, true);
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        setPan({ x: panRef.current.x - 60, y: panRef.current.y }, true);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setPan({ x: panRef.current.x, y: panRef.current.y + 60 }, true);
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setPan({ x: panRef.current.x, y: panRef.current.y - 60 }, true);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (e.button !== 0 && e.button !== 1) return;
+    isCanvasDraggingRef.current = true;
+    hasDraggedRef.current = false;
+    dragStartRef.current = { x: e.clientX, y: e.clientY };
+    panStartRef.current = { x: panRef.current.x, y: panRef.current.y };
+    setIsCanvasDragging(true);
+
+    if (svgRef.current) {
+      svgRef.current.style.transition = 'none';
+    }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isCanvasDraggingRef.current) return;
+    const dx = e.clientX - dragStartRef.current.x;
+    const dy = e.clientY - dragStartRef.current.y;
+
+    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
+      hasDraggedRef.current = true;
+    }
+
+    // Direct 1-to-1 pixel tracking! Moving mouse by 10px moves canvas by exactly 10px on screen
+    const newPanX = Math.round(panStartRef.current.x + dx);
+    const newPanY = Math.round(panStartRef.current.y + dy);
+
+    panRef.current = { x: newPanX, y: newPanY };
+    applyCanvasTransform(false);
+  };
+
+  const handleMouseUp = () => {
+    if (isCanvasDraggingRef.current) {
+      isCanvasDraggingRef.current = false;
+      setIsCanvasDragging(false);
+      setPanState({ ...panRef.current });
+    }
+  };
+
+  // Double click zooms towards the clicked point
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('button, input, select, [role="button"]')) return;
+
+    const container = containerRef.current;
+    if (!container) return;
+
+    const rect = container.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left - rect.width / 2;
+    const mouseY = e.clientY - rect.top - rect.height / 2;
+
+    const factor = e.shiftKey ? 0.75 : 1.35;
+    const currentZoom = zoomRef.current;
+    const newZoom = Math.min(2.5, Math.max(0.4, Number((currentZoom * factor).toFixed(2))));
+
+    if (newZoom === currentZoom) return;
+
+    const ratio = newZoom / currentZoom;
+    const newPanX = Math.round(mouseX - (mouseX - panRef.current.x) * ratio);
+    const newPanY = Math.round(mouseY - (mouseY - panRef.current.y) * ratio);
+
+    setZoomAndPan(newZoom, { x: newPanX, y: newPanY }, true);
+  };
+
+  // Click capture to prevent triggering switch clicks when user was dragging the canvas
+  const handleClickCapture = (e: React.MouseEvent) => {
+    if (hasDraggedRef.current) {
+      e.stopPropagation();
+      e.preventDefault();
+      hasDraggedRef.current = false;
+    }
+  };
+
+  // Expose current zoom and pan values for components that expect them as plain numbers/objects
+  const zoom = zoomState;
+  const pan = panState;
 
   const [inspectorTab, setInspectorTab] = useState<'control' | 'telemetry' | 'protection' | 'logs'>('control');
 
@@ -310,7 +481,6 @@ const pan = panState;
   const [isSynchroHudOpen, setIsSynchroHudOpen] = useState(false);
   const [hoverTelemetry, setHoverTelemetry] = useState<{ telemetry: ProcessBusTelemetry; pos: { x: number; y: number } } | null>(null);
   const [themeMode, setThemeMode] = useState<'ISA_101' | 'CYBERPUNK'>('CYBERPUNK');
-  const svgRef = React.useRef<SVGSVGElement | null>(null);
 
   // Switch States
   const sw1 = tr1State.switches;
@@ -405,10 +575,10 @@ const pan = panState;
 
   const handleSelectEquipment = (eq: EquipmentTarget) => {
     setSpotlightTarget(eq);
-    const targetPanX = 600 - eq.x;
-    const targetPanY = 325 - eq.y;
-    setPan({ x: Math.round(targetPanX), y: Math.round(targetPanY) });
-    setZoom(1.4);
+    const targetZoom = 1.45;
+    const targetPanX = Math.round((600 - eq.x) * targetZoom);
+    const targetPanY = Math.round((325 - eq.y) * targetZoom);
+    setZoomAndPan(targetZoom, { x: targetPanX, y: targetPanY }, true);
 
     const isHvdc = eq.bay.includes('HVDC') || eq.id.includes('HVDC') || eq.id.includes('DC');
     const trIdVal: 'TR-1' | 'TR-2' | 'HVDC' = isHvdc ? 'HVDC' : eq.bay.includes('TR-2') ? 'TR-2' : 'TR-1';
@@ -871,16 +1041,11 @@ const pan = panState;
             focusedBay={focusedBay}
             onSelectBay={(bay) => setFocusedBay(bay)}
             onQuickJump={(x, y, zoomLevel) => {
-              setPan({ x, y });
-              setZoom(zoomLevel);
+              setZoomAndPan(zoomLevel, { x, y }, true);
             }}
             zoom={zoom}
-            onZoomChange={(newZoom) => setZoom(newZoom)}
-            onResetView={() => {
-              setZoom(1.0);
-              setPan({ x: 0, y: 0 });
-              setFocusedBay('ALL');
-            }}
+            onZoomChange={(newZoom) => setZoom(newZoom, true)}
+            onResetView={handleResetView}
             showMinimap={showMinimap}
             onToggleMinimap={() => setShowMinimap(!showMinimap)}
           />
@@ -928,47 +1093,24 @@ const pan = panState;
 
           {/* SVG Canvas Container */}
           <div
+            ref={containerRef}
             className={`overflow-hidden relative w-full flex items-center justify-center p-2 rounded-2xl bg-zinc-950/60 border border-zinc-800/60 select-none ${
-              isCanvasDraggingRef.current ? 'cursor-grabbing' : 'cursor-grab'
+              isCanvasDragging ? 'cursor-grabbing' : 'cursor-grab'
             }`}
-            onMouseDown={(e) => {
-              if (e.button === 0) {
-                setIsCanvasDragging(true);
-                setDragStart({ x: e.clientX, y: e.clientY });
-                // Use current pan values from ref
-                setPanStart({ x: panRef.current.x, y: panRef.current.y });
-              }
-            }}
-            onMouseMove={(e) => {
-              if (isCanvasDraggingRef.current) {
-                const dx = (e.clientX - dragStartRef.current.x) / zoomRef.current;
-                const dy = (e.clientY - dragStartRef.current.y) / zoomRef.current;
-                panRef.current = { x: Math.round(panStartRef.current.x + dx), y: Math.round(panStartRef.current.y + dy) };
-                scheduleTransform();
-              }
-            }}
-            onMouseUp={() => {
-              if (isCanvasDraggingRef.current) {
-                setIsCanvasDragging(false);
-                setPanState({ x: panRef.current.x, y: panRef.current.y });
-              }
-            }}
-            onMouseLeave={() => {
-              if (isCanvasDraggingRef.current) {
-                setIsCanvasDragging(false);
-                setPanState({ x: panRef.current.x, y: panRef.current.y });
-              }
-            }}
-            onWheel={(e) => {
-              const delta = e.deltaY < 0 ? 0.1 : -0.1;
-              setZoom(Math.min(2.5, Math.max(0.5, Number((zoomRef.current + delta).toFixed(2)))));
-            }}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onDoubleClick={handleDoubleClick}
+            onClickCapture={handleClickCapture}
           >
             <svg
               ref={svgRef}
               viewBox="0 0 1200 650"
-              className="w-full h-[600px] min-w-[880px] font-mono transition-transform duration-100"
-              /* Transform is applied via requestAnimationFrame using refs */
+              className="w-full h-[600px] min-w-[880px] font-mono select-none"
+              style={{
+                transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+                transformOrigin: 'center center',
+              }}
             >
               {SLD_SVG_DEFS}
 
@@ -3504,12 +3646,8 @@ const pan = panState;
             {/* Floating Glassmorphism Controls Dock */}
             <SldFloatingGlassDock
               zoom={zoom}
-              onZoomChange={(newZoom) => setZoom(newZoom)}
-              onResetView={() => {
-                setZoom(1.0);
-                setPan({ x: 0, y: 0 });
-                setFocusedBay('ALL');
-              }}
+              onZoomChange={(newZoom) => setZoom(newZoom, true)}
+              onResetView={handleResetView}
               showMinimap={showMinimap}
               onToggleMinimap={() => setShowMinimap(!showMinimap)}
               layers={layers}
@@ -3567,7 +3705,7 @@ const pan = panState;
                 <SldMinimap
                   zoom={zoom}
                   pan={pan}
-                  onPanTo={(x, y) => setPan({ x, y })}
+                  onPanTo={(x, y) => setPan({ x, y }, true)}
                   isBusALive={isBusALive}
                   isBusBLive={isBusBLive}
                   isMVBus1Live={isMVBus1Live}

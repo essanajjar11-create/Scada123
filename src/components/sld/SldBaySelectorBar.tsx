@@ -29,13 +29,13 @@ const SldBaySelectorBarImpl: React.FC<SldBaySelectorBarProps> = ({
 
   const bays: { id: BayId; labelKey: string; x: number; y: number; zoom: number }[] = [
     { id: 'ALL', labelKey: 'global_substation', x: 0, y: 0, zoom: 1.0 },
-    { id: 'BAY_01_TR1', labelKey: 'bay_01_tr1_lbl', x: 280, y: 55, zoom: 1.35 },
-    { id: 'BAY_02_COUPLER', labelKey: 'bay_02_coupler_lbl', x: 100, y: 225, zoom: 1.4 },
-    { id: 'BAY_03_TR2', labelKey: 'bay_03_tr2_lbl', x: -80, y: 55, zoom: 1.35 },
-    { id: 'BAY_04_MV1', labelKey: 'bay_04_mv1_lbl', x: 320, y: -135, zoom: 1.35 },
-    { id: 'BAY_05_MV2', labelKey: 'bay_05_mv2_lbl', x: -80, y: -135, zoom: 1.35 },
-    { id: 'BAY_06_BESS', labelKey: 'bay_06_bess_lbl', x: -220, y: -155, zoom: 1.45 },
-    { id: 'BAY_07_HVDC', labelKey: 'bay_07_hvdc_lbl', x: -420, y: 55, zoom: 1.35 },
+    { id: 'BAY_01_TR1', labelKey: 'bay_01_tr1_lbl', x: 378, y: 74, zoom: 1.35 },
+    { id: 'BAY_02_COUPLER', labelKey: 'bay_02_coupler_lbl', x: 140, y: 315, zoom: 1.4 },
+    { id: 'BAY_03_TR2', labelKey: 'bay_03_tr2_lbl', x: -108, y: 74, zoom: 1.35 },
+    { id: 'BAY_04_MV1', labelKey: 'bay_04_mv1_lbl', x: 392, y: -142, zoom: 1.35 },
+    { id: 'BAY_05_MV2', labelKey: 'bay_05_mv2_lbl', x: -122, y: -142, zoom: 1.35 },
+    { id: 'BAY_06_BESS', labelKey: 'bay_06_bess_lbl', x: -319, y: -167, zoom: 1.45 },
+    { id: 'BAY_07_HVDC', labelKey: 'bay_07_hvdc_lbl', x: -567, y: 61, zoom: 1.35 },
   ];
 
   return (
@@ -67,14 +67,14 @@ const SldBaySelectorBarImpl: React.FC<SldBaySelectorBarProps> = ({
       {/* Viewport Quick Zoom & Minimap Toggle */}
       <div className="flex items-center space-x-1 rtl:space-x-reverse bg-zinc-950/80 p-1 rounded-lg border border-zinc-800">
         <button
-          onClick={() => onZoomChange(Math.min(zoom + 0.15, 1.8))}
+          onClick={() => onZoomChange(Math.min(zoom + 0.15, 2.5))}
           title={t('zoom_in')}
           className="p-1.5 hover:bg-zinc-800 text-zinc-300 rounded cursor-pointer transition-colors"
         >
           <ZoomIn className="w-3.5 h-3.5" />
         </button>
         <button
-          onClick={() => onZoomChange(Math.max(zoom - 0.15, 0.7))}
+          onClick={() => onZoomChange(Math.max(zoom - 0.15, 0.4))}
           title={t('zoom_out')}
           className="p-1.5 hover:bg-zinc-800 text-zinc-300 rounded cursor-pointer transition-colors"
         >

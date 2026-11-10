@@ -35,11 +35,20 @@ const SldMinimapImpl: React.FC<SldMinimapProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const svgRef = useRef<SVGSVGElement>(null);
 
-  // Viewport box calculations
+  // Viewport box calculations (strictly synchronized with zoom scale and screen pan)
   const vpWidth = Math.min(mapWidth, mapWidth / zoom);
   const vpHeight = Math.min(mapHeight, mapHeight / zoom);
-  const vpX = Math.max(0, Math.min(mapWidth - vpWidth, -pan.x * scaleX + (mapWidth - vpWidth) / 2));
-  const vpY = Math.max(0, Math.min(mapHeight - vpHeight, -pan.y * scaleY + (mapHeight - vpHeight) / 2));
+
+  // The center of the visible area in SVG coordinates (1200 x 650):
+  const centerSvgX = 600 - pan.x / zoom;
+  const centerSvgY = 325 - pan.y / zoom;
+
+  // Center projected into Minimap coordinates (200 x 125):
+  const centerMapX = centerSvgX * scaleX;
+  const centerMapY = centerSvgY * scaleY;
+
+  const vpX = Math.max(0, Math.min(mapWidth - vpWidth, centerMapX - vpWidth / 2));
+  const vpY = Math.max(0, Math.min(mapHeight - vpHeight, centerMapY - vpHeight / 2));
 
   const handlePointerNav = (clientX: number, clientY: number) => {
     if (!svgRef.current) return;
@@ -47,12 +56,13 @@ const SldMinimapImpl: React.FC<SldMinimapProps> = ({
     const clickX = Math.max(0, Math.min(mapWidth, clientX - rect.left));
     const clickY = Math.max(0, Math.min(mapHeight, clientY - rect.top));
 
-    // Calculate center relative to SLD space (1200 x 650)
+    // Calculate target point in SLD space (1200 x 650)
     const targetSvgX = clickX / scaleX;
     const targetSvgY = clickY / scaleY;
 
-    const newPanX = 600 - targetSvgX;
-    const newPanY = 325 - targetSvgY;
+    // Pan required to center this target point at current zoom:
+    const newPanX = Math.round((600 - targetSvgX) * zoom);
+    const newPanY = Math.round((325 - targetSvgY) * zoom);
     onPanTo(newPanX, newPanY);
   };
 
