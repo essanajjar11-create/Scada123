@@ -1,4 +1,5 @@
 {
+  "name": "scada1f23",
   "framework": "vite",
   "outputDirectory": "dist",
   "rewrites": [
