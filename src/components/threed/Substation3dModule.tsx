@@ -222,6 +222,7 @@ export const Substation3dModule: React.FC = () => {
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.25;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
 
     mountRef.current.innerHTML = '';
     mountRef.current.appendChild(renderer.domElement);
@@ -418,6 +419,26 @@ export const Substation3dModule: React.FC = () => {
     });
 
     const matConcrete = new THREE.MeshStandardMaterial({ color: 0x767f8e, roughness: 0.92 });
+    const matCoreSteel = new THREE.MeshStandardMaterial({
+      color: 0x475569,
+      metalness: 0.82,
+      roughness: 0.35,
+    });
+    const matTransformerOil = new THREE.MeshPhysicalMaterial({
+      color: 0xfef08a,
+      metalness: 0.0,
+      roughness: 0.08,
+      transmission: 0.82,
+      ior: 1.482,
+      transparent: true,
+      opacity: 0.65,
+      depthWrite: false,
+    });
+    const matInsulationPaper = new THREE.MeshStandardMaterial({
+      color: 0xb45309,
+      roughness: 0.82,
+      metalness: 0.02,
+    });
 
     // Shared material/context bundle consumed by the procedural asset library
     const assetCtx: AssetContext = {
@@ -437,7 +458,10 @@ export const Substation3dModule: React.FC = () => {
           emissiveIntensity: 0.55,
           transparent: true,
           opacity: 0.85
-        })
+        }),
+        coreSteel: matCoreSteel,
+        transformerOil: matTransformerOil,
+        insulationPaper: matInsulationPaper,
       },
       registerClickable: (obj, asset) => {
         clickableMeshesRef.current.push({ mesh: obj, asset: asset as AssetType });
@@ -620,11 +644,13 @@ export const Substation3dModule: React.FC = () => {
     // -------------------------------------------------------------
     const trFans = fanMeshesRef.current;
     const isXray = viewMode === 'XRAY_THERMAL';
+    const isCutaway = viewMode === 'CUTAWAY';
     scene.add(buildPowerTransformer(assetCtx, {
       x: -7,
       assetId: 'TR1',
       fans: trFans,
       xray: isXray,
+      cutaway: isCutaway,
       windingTint: tr1StateRef.current.windingTemp > 95 ? 0xef4444 : tr1StateRef.current.windingTemp > 75 ? 0xf59e0b : 0x06b6d4,
       onHotspot: (mesh) => { hotspotMeshRef.current = mesh; },
       onTapDial: (mesh) => { tapDialRef.current = mesh; }
@@ -633,7 +659,8 @@ export const Substation3dModule: React.FC = () => {
       x: 7,
       assetId: 'TR2',
       fans: trFans,
-      xray: isXray
+      xray: isXray,
+      cutaway: isCutaway,
     }));
 
     // Operable centre-break disconnectors wired to the switching model
