@@ -141,7 +141,7 @@ ASCII
     // 3. .HDR File Content (Header Metadata)
     const hdrContent = `COMTRADE IEEE C37.111 / IEC 60255-24 OSCILLOGRAM REPORT
 Substation: RTU-01 Primary Substation
-Transformer Bay: ${activeTelemetry?.id ?? 'TR1'} (50 MVA 132/13.8kV)
+Transformer Bay: ${activeTelemetry?.id ?? 'TR1'} (${activeTelemetry?.ratingMVA ?? 40} MVA 132/13.8kV)
 Fault Trigger Type: ${faultType} Phase Short-Circuit
 Sampling Frequency: ${samplingRate * 50} Hz (${samplingRate} Samples/Cycle)
 Pre-Fault Buffer: 5 Cycles (100 ms)

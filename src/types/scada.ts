@@ -62,7 +62,7 @@ export interface FaultFlags {
 export interface TransformerTelemetry {
   id: 'TR-1' | 'TR-2';
   name: string;
-  ratingMVA: number; // e.g. 50 MVA
+  ratingMVA: number; // e.g. 40 MVA
   primarykV: number; // 132 kV
   secondarykV: number; // 13.8 kV
 

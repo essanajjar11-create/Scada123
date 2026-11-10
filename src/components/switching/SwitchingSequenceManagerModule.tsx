@@ -38,7 +38,7 @@ export const SwitchingSequenceManagerModule: React.FC = () => {
       id: 'ORDER-01',
       title: 'TR-1 Complete LOTO Isolation for 132kV Bushing Overhaul',
       category: 'ISOLATION',
-      description: 'Sequential de-energization and safe earthing of 50 MVA Transformer 1 according to OSHA / NFPA 70E safety procedures.',
+      description: 'Sequential de-energization and safe earthing of 40 MVA Transformer 1 according to OSHA / NFPA 70E safety procedures.',
       targetAsset: 'Transformer 1 (TR-1)',
       safetyWarning: 'Ensure zero residual voltage check before applying Earth Switch 84-1.',
       status: 'READY_FOR_EXECUTION',

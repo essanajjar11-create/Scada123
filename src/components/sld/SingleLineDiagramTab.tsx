@@ -987,7 +987,7 @@ const pan = panRef.current;
                     onClick={() =>
                       setArcFlashModalData({
                         id: 'TR1-BAY',
-                        bay: 'TR-1 50MVA Bay 01',
+                        bay: 'TR-1 40MVA Bay 01',
                         v: '132/13.8 kV',
                         ik: 25.0,
                         t: 80,
@@ -1019,7 +1019,7 @@ const pan = panRef.current;
                     onClick={() =>
                       setArcFlashModalData({
                         id: 'TR2-BAY',
-                        bay: 'TR-2 50MVA Bay 03',
+                        bay: 'TR-2 40MVA Bay 03',
                         v: '132/13.8 kV',
                         ik: 25.0,
                         t: 80,
@@ -1534,13 +1534,13 @@ const pan = panRef.current;
                 onClick={() => {
                   setSelectedItem({
                     id: 'TR-1',
-                    name: 'TR-1 Main Power Transformer (50MVA)',
+                    name: 'TR-1 Main Power Transformer (40MVA)',
                     ansiCode: 'ANSI 87T',
                     type: 'transformer',
                     trId: 'TR-1',
                     bay: 'TR-1 Transformer Bay 01',
                     voltageRating: '132kV / 13.8kV',
-                    currentRating: '218 A Prim / 2,091 A Sec'
+                    currentRating: '175 A Prim / 1,673 A Sec'
                   });
                 }}
               >
@@ -1564,7 +1564,7 @@ const pan = panRef.current;
                 <circle cx="0" cy="18" r="16" fill="none" stroke="#06b6d4" strokeWidth="3" />
                 <line x1="0" y1="34" x2="0" y2="45" stroke={getLineColor(isTR1_SecLive, false)} strokeWidth="3" />
 
-                <text x="38" y="-8" fill="#f59e0b" fontSize="11" fontWeight="bold">TR-1 (50 MVA)</text>
+                <text x="38" y="-8" fill="#f59e0b" fontSize="11" fontWeight="bold">TR-1 (40 MVA)</text>
                 <text x="38" y="6" fill="#38bdf8" fontSize="10">132kV / 13.8kV Y-d11</text>
                 <text x="38" y="20" fill="#10b981" fontSize="10">Load: {tr1State.loadCurrent.toFixed(0)} A</text>
               </g>
@@ -1821,13 +1821,13 @@ const pan = panRef.current;
                   onClick={() => {
                     setSelectedItem({
                       id: 'TR-2',
-                      name: 'TR-2 Main Power Transformer (50MVA)',
+                      name: 'TR-2 Main Power Transformer (40MVA)',
                       ansiCode: 'ANSI 87T',
                       type: 'transformer',
                       trId: 'TR-2',
                       bay: 'TR-2 Transformer Bay 03',
                       voltageRating: '132kV / 13.8kV',
-                      currentRating: '185 A Prim / 1,775 A Sec'
+                      currentRating: '175 A Prim / 1,673 A Sec'
                     });
                   }}
                 >
@@ -1850,7 +1850,7 @@ const pan = panRef.current;
                   <circle cx="0" cy="18" r="16" fill="none" stroke="#06b6d4" strokeWidth="3" />
                   <line x1="0" y1="34" x2="0" y2="45" stroke={getLineColor(isTR2_SecLive, false)} strokeWidth="3" />
 
-                  <text x="38" y="-8" fill="#f59e0b" fontSize="11" fontWeight="bold">TR-2 (50 MVA)</text>
+                  <text x="38" y="-8" fill="#f59e0b" fontSize="11" fontWeight="bold">TR-2 (40 MVA)</text>
                   <text x="38" y="6" fill="#38bdf8" fontSize="10">132kV / 13.8kV Y-d11</text>
                   <text x="38" y="20" fill="#10b981" fontSize="10">Load: {tr2State.loadCurrent.toFixed(0)} A</text>
                 </g>
@@ -3848,7 +3848,7 @@ const pan = panRef.current;
                     <div className="bg-zinc-900/90 p-3 rounded-xl border border-zinc-800 flex justify-between items-center">
                       <span className="text-zinc-400 font-sans">Phase A Current:</span>
                       <span className="font-bold text-emerald-400">
-                        {selectedItem.trId === 'TR-2' ? (tr2State?.loadCurrent ?? 380).toFixed(1) : (tr1State?.loadCurrent ?? 450).toFixed(1)} A
+                        {selectedItem.trId === 'TR-2' ? (tr2State?.loadCurrent ?? 105.0).toFixed(1) : (tr1State?.loadCurrent ?? 122.5).toFixed(1)} A
                       </span>
                     </div>
                     <div className="bg-zinc-900/90 p-3 rounded-xl border border-zinc-800 flex justify-between items-center">
@@ -3860,7 +3860,7 @@ const pan = panRef.current;
                     <div className="bg-zinc-900/90 p-3 rounded-xl border border-zinc-800 flex justify-between items-center">
                       <span className="text-zinc-400 font-sans">Secondary CT Output:</span>
                       <span className="font-bold text-cyan-300">
-                        {selectedItem.trId === 'TR-2' ? (tr2State?.ctSecA ?? 3.16).toFixed(2) : (tr1State?.ctSecA ?? 3.75).toFixed(2)} A (CT 600/5)
+                        {selectedItem.trId === 'TR-2' ? (tr2State?.ctSecA ?? 1.75).toFixed(2) : (tr1State?.ctSecA ?? 2.04).toFixed(2)} A (CT 300/5)
                       </span>
                     </div>
                     <div className="bg-zinc-900/90 p-3 rounded-xl border border-zinc-800 flex justify-between items-center">

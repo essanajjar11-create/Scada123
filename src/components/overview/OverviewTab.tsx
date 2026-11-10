@@ -33,12 +33,15 @@ export const OverviewTab: React.FC = () => {
     return 'bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.5)]';
   };
 
-  const tr1LoadPct = ((tr1State?.loadCurrent ?? 0) / 600) * 100;
-  const tr2LoadPct = ((tr2State?.loadCurrent ?? 0) / 600) * 100;
+  const tr1LoadPct = ((tr1State?.apparentPower ?? 0) / ((tr1State?.ratingMVA ?? 40) * 10));
+  const tr2LoadPct = ((tr2State?.apparentPower ?? 0) / ((tr2State?.ratingMVA ?? 40) * 10));
 
   // Power Factor Gauge Angle calculation
-  // Angle range: -120 deg (PF 0.5) to +120 deg (PF 1.0)
-  const pfAngle = - (1.0 - (activeTelemetry?.pf ?? 0.98)) * 240;
+  // Angle range: -75 deg (PF 0.5) to +75 deg (PF 1.0), with 0.85 straight UP (0 deg)
+  const currentPf = activeTelemetry?.pf ?? 0.85;
+  const pfAngle = currentPf >= 0.85
+    ? ((currentPf - 0.85) / 0.15) * 75
+    : ((currentPf - 0.85) / 0.35) * 75;
 
   return (
     <div className="space-y-6 text-[#fafafa]">
@@ -87,9 +90,11 @@ export const OverviewTab: React.FC = () => {
 
         {/* Transformer Cards */}
         {[tr1State, tr2State].map((tr) => {
-          const loadPct = ((tr?.loadCurrent ?? 0) / 600) * 100;
+          const ratingMVA = tr?.ratingMVA ?? 40;
+          const loadPct = tr?.apparentPower ? (tr.apparentPower / (ratingMVA * 10)) : 0;
           const isSelected = activeTr === tr?.id;
           const trDisplayName = tr?.id === 'TR-1' ? (lang === 'ar' ? 'محول القدرة TR-1' : 'Power Transformer TR-1') : (lang === 'ar' ? 'محول القدرة TR-2' : 'Power Transformer TR-2');
+          const secCurrentA = tr?.apparentPower ? ((tr.apparentPower * 1000) / (Math.sqrt(3) * (tr.secondarykV || 13.8) * 1000)) : 0;
           return (
             <div
               key={tr?.id ?? 'tr'}
@@ -106,7 +111,7 @@ export const OverviewTab: React.FC = () => {
                   <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
                     isSelected ? 'bg-indigo-600 text-white border-indigo-400' : 'bg-zinc-800 text-zinc-400 border-zinc-700'
                   }`}>
-                    {tr?.ratingMVA ?? 50} MVA
+                    {ratingMVA} MVA
                   </span>
                 </div>
 
@@ -115,12 +120,24 @@ export const OverviewTab: React.FC = () => {
 
                 <div className="grid grid-cols-2 gap-2 text-xs font-mono mb-4 bg-zinc-950/60 p-3 rounded-2xl border border-zinc-800/80">
                   <div>
-                    <span className="text-zinc-500 text-[10px] block font-sans uppercase tracking-wider font-bold">{t('load_percentage')}</span>
+                    <span className="text-zinc-500 text-[10px] block font-sans uppercase tracking-wider font-bold">
+                      {lang === 'ar' ? 'التيار الابتدائي (132kV)' : 'HV Current (132kV)'}
+                    </span>
                     <span className="text-sm font-bold text-zinc-100">{(tr?.loadCurrent ?? 0).toFixed(1)} A</span>
                   </div>
                   <div>
+                    <span className="text-zinc-500 text-[10px] block font-sans uppercase tracking-wider font-bold">
+                      {lang === 'ar' ? 'التيار الثانوي (13.8kV)' : 'LV Current (13.8kV)'}
+                    </span>
+                    <span className="text-sm font-bold text-cyan-400">{secCurrentA.toFixed(1)} A</span>
+                  </div>
+                  <div className="mt-1 pt-1 border-t border-zinc-800/60">
                     <span className="text-zinc-500 text-[10px] block font-sans uppercase tracking-wider font-bold">{t('top_oil_temp')}</span>
                     <span className="text-sm font-bold text-amber-400">{(tr?.oilTemp ?? 0).toFixed(1)} °C</span>
+                  </div>
+                  <div className="mt-1 pt-1 border-t border-zinc-800/60">
+                    <span className="text-zinc-500 text-[10px] block font-sans uppercase tracking-wider font-bold">{t('load_percentage')}</span>
+                    <span className="text-sm font-bold text-indigo-400">{loadPct.toFixed(1)} %</span>
                   </div>
                 </div>
               </div>
@@ -134,7 +151,7 @@ export const OverviewTab: React.FC = () => {
                 <div className="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
                   <div
                     className={`h-full transition-all duration-500 rounded-full ${getLoadBarColor(loadPct)}`}
-                    style={{ width: `${Math.min(100, loadPct)}%` }}
+                    style={{ width: `${Math.min(100, Math.max(0, loadPct))}%` }}
                   />
                 </div>
               </div>
@@ -215,7 +232,7 @@ export const OverviewTab: React.FC = () => {
               </h3>
             </div>
             <span className="text-[10px] text-zinc-400 bg-zinc-950 px-2.5 py-1 rounded-full border border-zinc-800 font-mono">
-              {activeTelemetry?.primaryRatio ?? 600}/{activeTelemetry?.secondaryRatio ?? 5}A
+              {activeTelemetry?.primaryRatio ?? 300}/{activeTelemetry?.secondaryRatio ?? 5}A
             </span>
           </div>
 

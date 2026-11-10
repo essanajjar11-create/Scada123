@@ -184,24 +184,24 @@ const defaultSwitches: SwitchgearState = {
 const createInitialState = (id: 'TR-1' | 'TR-2', name: string): TransformerTelemetry => ({
   id,
   name,
-  ratingMVA: 50,
+  ratingMVA: 40,
   primarykV: 132,
   secondarykV: 13.8,
 
-  loadCurrent: id === 'TR-1' ? 450.0 : 380.0,
+  loadCurrent: id === 'TR-1' ? 122.5 : 105.0,
   gridVoltage: 132.0,
-  phaseA_Voltage: 76.2,
-  phaseB_Voltage: 76.2,
-  phaseC_Voltage: 76.2,
-  voltageUnbalance: 0.4,
+  phaseA_Voltage: 76.21,
+  phaseB_Voltage: 76.21,
+  phaseC_Voltage: 76.21,
+  voltageUnbalance: 0.25,
   frequency: 50.0,
 
-  ctRatioVal: 120, // 600/5
-  primaryRatio: 600,
+  ctRatioVal: 60, // 300/5
+  primaryRatio: 300,
   secondaryRatio: 5,
-  ctSecA: (id === 'TR-1' ? 450 : 380) / 120,
-  ctSecB: (id === 'TR-1' ? 450 : 380) / 120,
-  ctSecC: (id === 'TR-1' ? 450 : 380) / 120,
+  ctSecA: (id === 'TR-1' ? 122.5 : 105.0) / 60,
+  ctSecB: (id === 'TR-1' ? 122.5 : 105.0) / 60,
+  ctSecC: (id === 'TR-1' ? 122.5 : 105.0) / 60,
   ctBurdenVA: 12.5,
 
   oilTemp: 62.4,
@@ -216,9 +216,9 @@ const createInitialState = (id: 'TR-1' | 'TR-2', name: string): TransformerTelem
   tapOps: 14,
   tapMode: 'AUTO',
 
-  activePower: 87420,
-  reactivePower: 54180,
-  apparentPower: 102850,
+  activePower: id === 'TR-1' ? 23800 : 20400,
+  reactivePower: id === 'TR-1' ? 14750 : 12640,
+  apparentPower: id === 'TR-1' ? 28000 : 24000,
   pf: 0.85,
   isLagging: true,
   fwdEnergy: 142560.2,
@@ -226,7 +226,7 @@ const createInitialState = (id: 'TR-1' | 'TR-2', name: string): TransformerTelem
   indEn: 88020.5,
   capEn: 152.1,
   appEn: 167520.8,
-  maxDemand: 104.28,
+  maxDemand: 28.5,
   thd: 2.1,
 
   harmonics: {
@@ -382,7 +382,7 @@ export const ScadaProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   });
 
   const [manualValues, setManualValuesState] = useState({
-    loadCurrent: 450.0,
+    loadCurrent: 122.5,
     gridVoltage: 132.0,
     oilTemp: 62.4,
     thd: 2.1,
@@ -655,6 +655,33 @@ export const ScadaProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Real-Time Subscriptions for Multi-User Sync
   useEffect(() => {
     const unsubscribe = realtimeSync.subscribe((msg: SyncMessagePayload) => {
+      // 0. Server Connection Greeting with Replayed Snapshot & Telemetry
+      if (msg.type === 'CONNECTED') {
+        if (msg.snapshot) {
+          const snap = msg.snapshot;
+          if (snap.tr1Switches) setTr1State((prev) => ({ ...prev, switches: snap.tr1Switches }));
+          if (snap.tr2Switches) setTr2State((prev) => ({ ...prev, switches: snap.tr2Switches }));
+          if (snap.simMode) setSimModeState(snap.simMode);
+          if (snap.manualValues) setManualValuesState(snap.manualValues);
+          if (snap.thresholds) setThresholds(snap.thresholds);
+          if (snap.maintenanceMode !== undefined) setMaintenanceModeState(snap.maintenanceMode);
+        }
+        if (msg.telemetry) {
+          remoteTelemetryRef.current = msg.telemetry;
+          lastRemoteTelemetrySentAtRef.current = msg.telemetry.sentAt;
+          lastRemoteTelemetryAtRef.current = Date.now();
+          tr1StateRef.current = msg.telemetry.tr1;
+          tr2StateRef.current = msg.telemetry.tr2;
+          bessStateRef.current = msg.telemetry.bess;
+          hvdcStateRef.current = msg.telemetry.hvdc;
+          setTr1State(msg.telemetry.tr1);
+          setTr2State(msg.telemetry.tr2);
+          setBessState(msg.telemetry.bess);
+          setHvdcState(msg.telemetry.hvdc);
+        }
+        return;
+      }
+
       // 1. Presence Heartbeat
       if (msg.type === 'PRESENCE_HEARTBEAT') {
         setActiveUsers((prev) => {
@@ -864,18 +891,45 @@ export const ScadaProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       // 9a. Authoritative live telemetry frame from the elected simulation leader
       if (msg.type === 'TELEMETRY_SYNC' && msg.telemetry) {
-        // The elected leader is authoritative and never follows anyone else.
-        if (!isSimLeaderRef.current) {
-          const fromElectedLeader = msg.senderWorkstationId === telemetryLeaderIdRef.current;
-          // If the elected leader went silent (tab closed), accept any peer's
-          // frame so remaining workstations still converge while re-electing.
-          const leaderSilent =
-            Date.now() - lastRemoteTelemetryAtRef.current >= REMOTE_TELEMETRY_STALE_MS;
-          if (fromElectedLeader || leaderSilent) {
-            lastRemoteTelemetrySentAtRef.current = msg.telemetry.sentAt;
-            remoteTelemetryRef.current = msg.telemetry;
-            lastRemoteTelemetryAtRef.current = Date.now();
-          }
+        // Track the sender in active presence so membership list stays fresh
+        setActiveUsers((prev) => {
+          const filtered = prev.filter((u) => u.workstationId !== msg.senderWorkstationId);
+          return [
+            ...filtered,
+            {
+              workstationId: msg.senderWorkstationId,
+              userName: msg.senderName,
+              userRole: msg.senderRole,
+              lastActiveTimestamp: msg.timestamp || Date.now(),
+            },
+          ];
+        });
+
+        // Priority comparison between sender and local workstation
+        const senderPriority = msg.senderWorkstationId.localeCompare(myWorkstationId);
+
+        // If another active workstation has a lower ID, yield leadership immediately
+        if (senderPriority < 0) {
+          isSimLeaderRef.current = false;
+          telemetryLeaderIdRef.current = msg.senderWorkstationId;
+        }
+
+        const isCurrentLeader = isSimLeaderRef.current;
+        const leaderSilent = Date.now() - lastRemoteTelemetryAtRef.current >= REMOTE_TELEMETRY_STALE_MS;
+        const acceptRemote = (!isCurrentLeader || senderPriority < 0 || leaderSilent);
+
+        if (acceptRemote) {
+          lastRemoteTelemetrySentAtRef.current = msg.telemetry.sentAt;
+          remoteTelemetryRef.current = msg.telemetry;
+          lastRemoteTelemetryAtRef.current = Date.now();
+          tr1StateRef.current = msg.telemetry.tr1;
+          tr2StateRef.current = msg.telemetry.tr2;
+          bessStateRef.current = msg.telemetry.bess;
+          hvdcStateRef.current = msg.telemetry.hvdc;
+          setTr1State(msg.telemetry.tr1);
+          setTr2State(msg.telemetry.tr2);
+          setBessState(msg.telemetry.bess);
+          setHvdcState(msg.telemetry.hvdc);
         }
         return;
       }
@@ -1683,17 +1737,23 @@ export const ScadaProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         let thdVal = prev.thd;
         let oilLvl = prev.oilLevel1;
 
+        const ratedPrimCurrent = (prev.ratingMVA * 1000) / (Math.sqrt(3) * (prev.primarykV || 132)); // ~174.95 A at 40 MVA / 132 kV
+
         if (simMode === 'AUTO') {
-          // Dynamic small sinusoidal / random fluctuations
-          const noiseI = (Math.random() - 0.5) * 4.0;
-          const noiseV = (Math.random() - 0.5) * 0.4;
-          current = Math.max(0, Math.min(600, current + noiseI));
-          gridV = Math.max(100, Math.min(150, gridV + noiseV));
+          // Dynamic small fluctuations around rated base current (122.5A for TR-1, 105.0A for TR-2)
+          const baseCurrent = prev.id === 'TR-1' ? 122.5 : 105.0;
+          const noiseI = (Math.random() - 0.5) * 1.5;
+          const noiseV = (Math.random() - 0.5) * 0.3;
+          current = Math.max(10, Math.min(ratedPrimCurrent * 1.4, current + noiseI));
+          current = current + (baseCurrent - current) * 0.05;
+
+          gridV = Math.max(120, Math.min(142, gridV + noiseV));
+          gridV = gridV + (132.0 - gridV) * 0.05;
 
           // Thermal equations based on current
-          const loadRatio = current / 600;
-          const targetOilT = prev.ambientTemp + 20 + loadRatio * 35;
-          oilT = oilT + (targetOilT - oilT) * 0.05;
+          const loadRatio = current / ratedPrimCurrent;
+          const targetOilT = prev.ambientTemp + 20 + loadRatio * 30;
+          oilT = oilT + (targetOilT - oilT) * 0.03;
         } else {
           // Manual values override
           current = manualValues.loadCurrent;
@@ -1705,13 +1765,14 @@ export const ScadaProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
         // Apply Fault Effects
         if (prev.faults.lgFault) {
-          current = 580.0; // High fault current
+          current = ratedPrimCurrent * 1.85; // High fault current ~323 A
         }
         if (prev.faults.overTemp) {
           oilT = Math.max(oilT, 92.0);
         }
 
-        const windingT = oilT + (current / 600) * 12.0;
+        const loadRatio = current / ratedPrimCurrent;
+        const windingT = oilT + loadRatio * 12.0;
         const bushingT = oilT * 0.85;
 
         // Fan & Pump Hysteretic Controls
@@ -1723,7 +1784,7 @@ export const ScadaProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const coolingLoad = (fan1 ? 30 : 0) + (fan2 ? 40 : 0) + (pump2 ? 30 : 0);
 
         // Electrical Calculations
-        const safeRatioVal = Math.max(1, prev.ctRatioVal || (prev.primaryRatio ? prev.primaryRatio / 5 : 24));
+        const safeRatioVal = Math.max(1, prev.ctRatioVal || (prev.primaryRatio ? prev.primaryRatio / 5 : 60));
         const ctSecA = prev.faults.ctOpen ? 0 : current / safeRatioVal;
         const ctSecB = current / safeRatioVal;
         const ctSecC = current / safeRatioVal;
@@ -1734,7 +1795,7 @@ export const ScadaProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             : prev.switches.hvBreaker52_1 && prev.switches.mvBreaker52_2;
         const actualCurrent = isConnected ? current : 0;
         if (prev.id === activeTrRef.current) {
-          soundEngine.updateHum((actualCurrent / 600) * 100);
+          soundEngine.updateHum(Math.min(100, (actualCurrent / ratedPrimCurrent) * 100));
         }
 
         const lineV_V = gridV * 1000;
@@ -1780,16 +1841,12 @@ export const ScadaProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         };
       };
 
-      setTr1State((prev) => {
-        const next = updateTelemetry(prev);
-        tr1StateRef.current = next;
-        return next;
-      });
-      setTr2State((prev) => {
-        const next = updateTelemetry(prev);
-        tr2StateRef.current = next;
-        return next;
-      });
+      const nextTr1 = updateTelemetry(tr1StateRef.current);
+      const nextTr2 = updateTelemetry(tr2StateRef.current);
+      tr1StateRef.current = nextTr1;
+      tr2StateRef.current = nextTr2;
+      setTr1State(nextTr1);
+      setTr2State(nextTr2);
 
       // Append to rolling history using freshly computed telemetry
       setHistory((prevHist) => {

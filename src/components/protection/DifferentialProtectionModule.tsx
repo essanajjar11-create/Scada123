@@ -16,7 +16,7 @@ import { useScada } from '../../context/ScadaContext';
 import { EquationCard } from '../common/EquationCard';
 
 export const DifferentialProtectionModule: React.FC = () => {
-  const { addAuditLog, t, lang } = useScada();
+  const { addAuditLog, activeTelemetry, t, lang } = useScada();
   const isAr = lang === 'ar';
 
   // ANSI 87T Relay Characteristic Settings (in p.u.)
@@ -174,7 +174,7 @@ export const DifferentialProtectionModule: React.FC = () => {
                 {isAr ? 'منحنى الحماية التفاضلية للمحول ANSI 87T (Dual-Slope)' : 'Transformer Differential Protection ANSI 87T (Dual Slope & Harmonic Restraint)'}
               </h2>
               <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-950 text-cyan-300 border border-cyan-800 font-bold">
-                50 MVA TRANSFORMER
+                {activeTelemetry?.ratingMVA ?? 40} MVA TRANSFORMER
               </span>
             </div>
             <p className="text-xs text-zinc-400">

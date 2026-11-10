@@ -1353,7 +1353,7 @@ export const Substation3dModule: React.FC = () => {
       case 'TR1':
         return {
           title: isAr ? 'محول القدرة الرئيسي TR-1' : 'TR-1 Main Power Transformer',
-          rating: isAr ? '50 م.ف.أ • 132/13.8 ك.ف' : '50 MVA • 132/13.8 kV',
+          rating: isAr ? '40 م.ف.أ • 132/13.8 ك.ف' : '40 MVA • 132/13.8 kV',
           status: isAr ? 'قيد التشغيل (متصل بالشبكة)' : 'OPERATIONAL (ONLINE)',
           temp: `${((tr1State?.windingTemp ?? 71.8) * (simulatedLoadPct / 85)).toFixed(1)} °C`,
           oilTemp: `${((tr1State?.oilTemp ?? 62.4) * (simulatedLoadPct / 85)).toFixed(1)} °C`,
@@ -1364,7 +1364,7 @@ export const Substation3dModule: React.FC = () => {
       case 'TR2':
         return {
           title: isAr ? 'محول القدرة الاحتياطي TR-2' : 'TR-2 Secondary Power Transformer',
-          rating: isAr ? '50 م.ف.أ • 132/13.8 ك.ف' : '50 MVA • 132/13.8 kV',
+          rating: isAr ? '40 م.ف.أ • 132/13.8 ك.ف' : '40 MVA • 132/13.8 kV',
           status: isAr ? 'جاهزية احتياطية / توازي' : 'STANDBY / PARALLEL',
           temp: '58.2 °C',
           oilTemp: '48.6 °C',
@@ -1608,7 +1608,7 @@ export const Substation3dModule: React.FC = () => {
               <div className="absolute top-[28%] left-[22%] bg-zinc-950/90 border border-cyan-500/80 p-2 rounded-xl text-[10px] font-mono shadow-2xl animate-in fade-in zoom-in-95">
                 <div className="flex items-center gap-1.5 text-cyan-300 font-extrabold">
                   <Zap className="w-3 h-3 text-cyan-400" />
-                  <span>TR-1 (50 MVA)</span>
+                  <span>TR-1 (40 MVA)</span>
                 </div>
                 <div className="text-zinc-300 font-bold mt-0.5">132/13.8kV • 58.4°C • {simulatedLoadPct}% Load</div>
               </div>
@@ -1617,7 +1617,7 @@ export const Substation3dModule: React.FC = () => {
               <div className="absolute top-[28%] right-[24%] bg-zinc-950/90 border border-cyan-500/80 p-2 rounded-xl text-[10px] font-mono shadow-2xl animate-in fade-in zoom-in-95">
                 <div className="flex items-center gap-1.5 text-cyan-300 font-extrabold">
                   <Zap className="w-3 h-3 text-cyan-400" />
-                  <span>TR-2 (50 MVA)</span>
+                  <span>TR-2 (40 MVA)</span>
                 </div>
                 <div className="text-zinc-300 font-bold mt-0.5">132/13.8kV • 52.1°C • 78% Load</div>
               </div>

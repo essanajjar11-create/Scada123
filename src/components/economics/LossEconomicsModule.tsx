@@ -21,9 +21,10 @@ export const LossEconomicsModule: React.FC = () => {
   const [enableAutoParallelOptimization, setEnableAutoParallelOptimization] = useState<boolean>(true);
 
   // Losses Calculation Model
-  // Transformer Nominal: Core Losses $P_0 = 42\text{ kW}$ (Fixed Hysteresis + Eddy), Load Losses $P_k = 180\text{ kW}$ at 50 MVA rated load
-  const loadTR1 = (tr1State?.loadCurrent ?? 450.0) / 210.0; // load ratio K1
-  const loadTR2 = (tr2State?.loadCurrent ?? 380.0) / 210.0; // load ratio K2
+  // Transformer Nominal: Core Losses $P_0 = 42\text{ kW}$ (Fixed Hysteresis + Eddy), Load Losses $P_k = 180\text{ kW}$ at 40 MVA rated load
+  const ratedPrimCurrent = ((tr1State?.ratingMVA ?? 40.0) * 1000) / (Math.sqrt(3) * (tr1State?.primarykV ?? 132.0)); // ~174.95 A
+  const loadTR1 = (tr1State?.loadCurrent ?? 122.5) / ratedPrimCurrent; // load ratio K1
+  const loadTR2 = (tr2State?.loadCurrent ?? 105.0) / ratedPrimCurrent; // load ratio K2
 
   // TR1 Losses
   const coreLossTR1 = 42.0; // kW
@@ -41,8 +42,8 @@ export const LossEconomicsModule: React.FC = () => {
 
   // Single Transformer Parallel Optimization Calculation
   // Total Current
-  const totalLoadCurrent = (tr1State?.loadCurrent ?? 450.0) + (tr2State?.loadCurrent ?? 380.0);
-  const totalRatioK = totalLoadCurrent / 210.0;
+  const totalLoadCurrent = (tr1State?.loadCurrent ?? 122.5) + (tr2State?.loadCurrent ?? 105.0);
+  const totalRatioK = totalLoadCurrent / ratedPrimCurrent;
 
   // Single TR Loss if all load on TR1 (and TR2 isolated)
   const singleTrCoreLoss = 42.0;
@@ -95,7 +96,7 @@ export const LossEconomicsModule: React.FC = () => {
             <div className="bg-[#09090b] border border-zinc-800 rounded-2xl p-5 space-y-3 shadow-xl">
               <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
                 <span className="text-xs font-bold text-white uppercase">{t('econ_tr1_losses')}</span>
-                <span className="text-[10px] text-zinc-500 font-bold">50 MVA</span>
+                <span className="text-[10px] text-zinc-500 font-bold">{tr1State?.ratingMVA ?? 40} MVA</span>
               </div>
 
               <div className="space-y-2 text-xs">
@@ -118,7 +119,7 @@ export const LossEconomicsModule: React.FC = () => {
             <div className="bg-[#09090b] border border-zinc-800 rounded-2xl p-5 space-y-3 shadow-xl">
               <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
                 <span className="text-xs font-bold text-white uppercase">{t('econ_tr2_losses')}</span>
-                <span className="text-[10px] text-zinc-500 font-bold">50 MVA</span>
+                <span className="text-[10px] text-zinc-500 font-bold">{tr2State?.ratingMVA ?? 40} MVA</span>
               </div>
 
               <div className="space-y-2 text-xs">

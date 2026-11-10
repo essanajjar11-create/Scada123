@@ -15,27 +15,28 @@ import {
 } from 'lucide-react';
 
 export const DynamicRatingModule: React.FC = () => {
-  const { tr1State, t } = useScada();
+  const { tr1State, activeTelemetry, t } = useScada();
+  const nameplateMVA = activeTelemetry?.ratingMVA ?? 40.0;
 
   // Weather parameters state
   const [ambientTempC, setAmbientTempC] = useState<number>(32); // °C
   const [windSpeedMS, setWindSpeedMS] = useState<number>(3.5); // m/s
   const [solarIrradiance, setSolarIrradiance] = useState<number>(650); // W/m^2
-  const [appliedLoadMVA, setAppliedLoadMVA] = useState<number>(58.0); // MVA overload
+  const [appliedLoadMVA, setAppliedLoadMVA] = useState<number>(35.0); // MVA load
 
   // IEEE 738 / IEC 60076-7 Dynamic Rating Engine
-  // Nominal Base: 50 MVA at Tamb=30°C, Wind=1.0m/s, Solar=800W/m^2
-  const tempCorrection = (30 - ambientTempC) * 0.45; // MVA adjustment per °C
-  const windCorrection = (windSpeedMS - 1.0) * 0.85; // MVA gain from forced convection
-  const solarCorrection = ((800 - solarIrradiance) / 800) * 1.8; // MVA adjustment
+  // Nominal Base: 40 MVA at Tamb=30°C, Wind=1.0m/s, Solar=800W/m^2
+  const tempCorrection = (30 - ambientTempC) * 0.35; // MVA adjustment per °C
+  const windCorrection = (windSpeedMS - 1.0) * 0.70; // MVA gain from forced convection
+  const solarCorrection = ((800 - solarIrradiance) / 800) * 1.5; // MVA adjustment
 
-  const dynamicRatingMVA = Math.min(75.0, Math.max(35.0, 50.0 + tempCorrection + windCorrection + solarCorrection));
+  const dynamicRatingMVA = Math.min(60.0, Math.max(25.0, nameplateMVA + tempCorrection + windCorrection + solarCorrection));
   const loadPercentageDynamic = (appliedLoadMVA / dynamicRatingMVA) * 100;
-  const loadPercentageNameplate = (appliedLoadMVA / 50.0) * 100;
+  const loadPercentageNameplate = (appliedLoadMVA / nameplateMVA) * 100;
 
   // Hotspot Temperature Estimation $\Theta_H$
   // $\Theta_H = T_{amb} + \Delta \Theta_O + \Delta \Theta_{H,R} \cdot (K)^1.6$
-  const loadRatioK = appliedLoadMVA / 50.0;
+  const loadRatioK = appliedLoadMVA / nameplateMVA;
   const estimatedHotspotC = ambientTempC + 45.0 * Math.pow(loadRatioK, 1.6) - (windSpeedMS * 1.2);
 
   // Safe Overload Countdown Calculation
@@ -122,9 +123,9 @@ export const DynamicRatingModule: React.FC = () => {
               </div>
 
               <div className="text-[11px] font-mono text-zinc-400 flex justify-between">
-                <span>Min: 35 MVA</span>
-                <span>Nameplate: 50 MVA</span>
-                <span>Max: 75 MVA</span>
+                <span>Min: 25 MVA</span>
+                <span>Nameplate: {nameplateMVA} MVA</span>
+                <span>Max: 60 MVA</span>
               </div>
             </div>
 
