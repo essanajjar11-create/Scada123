@@ -1,12 +1,116 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 @layer base {
-  html[lang="ar"] {
-    font-family: 'IBM Plex Sans Arabic', 'Cairo', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    letter-spacing: 0;
+  body {
+    background-color: #0e1014;
+    color: #e2e8f0;
+    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+    user-select: none;
+    overflow-x: hidden;
   }
 
-  html[lang="ar"] .font-mono {
-    font-family: 'JetBrains Mono', 'IBM Plex Sans Arabic', monospace;
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
   }
+  ::-webkit-scrollbar-track {
+    background: #14171f;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #2b3342;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #475569;
+  }
+}
+
+.font-mono-numbers {
+  font-family: 'IBM Plex Mono', 'Consolas', monospace;
+  font-feature-settings: "tnum";
+  font-variant-numeric: tabular-nums;
+}
+
+/* Power Flow Animations */
+@keyframes flowDown {
+  from {
+    stroke-dashoffset: 28;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes flowUp {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: 28;
+  }
+}
+
+@keyframes flowRight {
+  from {
+    stroke-dashoffset: 28;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes flowLeft {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: 28;
+  }
+}
+
+@keyframes electricPulse {
+  0%, 100% {
+    opacity: 0.85;
+    filter: drop-shadow(0 0 1px #dc2626);
+  }
+  50% {
+    opacity: 1;
+    filter: drop-shadow(0 0 5px #ef4444);
+  }
+}
+
+@keyframes amberPulse {
+  0%, 100% {
+    opacity: 0.85;
+    filter: drop-shadow(0 0 1px #ea580c);
+  }
+  50% {
+    opacity: 1;
+    filter: drop-shadow(0 0 5px #f97316);
+  }
+}
+
+.anim-flow-down {
+  stroke-dasharray: 8 6;
+  animation: flowDown 1s linear infinite;
+}
+
+.anim-flow-right {
+  stroke-dasharray: 8 6;
+  animation: flowRight 1s linear infinite;
+}
+
+.anim-flow-left {
+  stroke-dasharray: 8 6;
+  animation: flowLeft 1s linear infinite;
+}
+
+.anim-electric-220 {
+  animation: electricPulse 2.5s ease-in-out infinite;
+}
+
+.anim-electric-110 {
+  animation: amberPulse 2.5s ease-in-out infinite;
 }

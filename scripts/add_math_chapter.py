@@ -1,1 +1,0 @@
-# Math Chapter Generator Script

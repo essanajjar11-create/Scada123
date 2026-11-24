@@ -1,11 +1,23 @@
+# Dependencies & Build Outputs
 node_modules/
-build/
 dist/
+build/
 coverage/
-.DS_Store
+
+# .NET Desktop App Build Artifacts & User Settings
+desktop_app/bin/
+desktop_app/obj/
+desktop_app/publish/
+desktop_app/*.csproj.user
+
+# Compiled Binaries (distributed via GitHub Releases)
+*.exe
+*.dll
+*.pdb
+
+# Environment & Logs
 *.log
 .env*
 !.env.example
-scada_server.exe
-sea-prep.blob
-
+.DS_Store
+Thumbs.db

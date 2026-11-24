@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>SubstationSimulator</AssemblyName>
+    <RootNamespace>SubstationSimulator</RootNamespace>
+    
+    <!-- Self-contained Single File Executable Settings -->
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4314.35" />
+  </ItemGroup>
+
+  <!-- Embed all files from dist folder directly inside the assembly -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\dist\**\*.*">
+      <Link>dist\%(RecursiveDir)%(FileName)%(Extension)</Link>
+    </EmbeddedResource>
+  </ItemGroup>
+
+</Project>
